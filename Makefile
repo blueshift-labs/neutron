@@ -24,8 +24,6 @@ priv:
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
 	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
-# 	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -o $@
-# 	$(CC) $CPP_PATH/lib/libpulsar.dylib $CPP_PATH/lib/libpulsar.2.5.0.dylib -C ./c_src/ -fPIC -O3 -DDEBUG -g -Wunused $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -l:$CPP_PATH/lib/libpulsar.a -I $CPP_PATH/include -llibpulsar -llibpulsar.2.5.0 -o $@
 
 clean:
 	$(RM) priv/neutron_nif.so
