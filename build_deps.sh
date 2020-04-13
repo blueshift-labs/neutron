@@ -39,15 +39,17 @@ function BuildLib()
   case $OS in
         Darwin)
             brew install openssl protobuf boost boost-python log4cxx jsoncpp
-            OPENSSL_ROOT_DIR=$(brew --prefix openssl)
-            export CPPFLAGS=-I$OPENSSL_ROOT_DIR/include/
+            export OPENSSL_ROOT_DIR=$(brew --prefix openssl)
+            export OPENSSL_INCLUDE_DIR=$OPENSSL_ROOT_DIR/include
+            export OPENSSL_SSL_LIBRARY=$OPENSSL_ROOT_DIR/lib
+            export CPPFLAGS=-I$OPENSSL_ROOT_DIR/include
             export LDFLAGS=-L$OPENSSL_ROOT_DIR/lib
             ;;
     esac
 
     cd pulsar-client-cpp
     fail_check cmake . -DBUILD_TESTS=OFF
-    fail_check make
+    fail_check make -j$(nproc)
 
   popd
   popd

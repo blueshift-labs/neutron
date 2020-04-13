@@ -3,17 +3,41 @@ defmodule Neutron.Application do
   # for more information on OTP Applications
   @moduledoc false
 
+  alias Neutron.PulsarClient
+
   use Application
+
+  @dynamic_supervisor Neutron.DynamicSupervisor
 
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Neutron.Worker.start_link(arg)
-      # {Neutron.Worker, arg}
+      {DynamicSupervisor,
+       strategy: :one_for_one,
+       name: @dynamic_supervisor,
+       max_restarts: 2_000,
+       shutdown: :infinity,
+       max_seconds: 1},
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Neutron.Supervisor]
+    opts = [strategy: :one_for_one, name: Neutron.Supervisor, shutdown: :infinity]
+
+    # todo pass-in configs here
+    PulsarClient.start_client()
+
     Supervisor.start_link(children, opts)
+  end
+
+  def stop(_state) do
+    DynamicSupervisor.stop(@dynamic_supervisor)
+    # hopefully all producers and consumers clean-up in genServer stop correctly
+    PulsarClient.stop_client()
+  end
+
+  def start_child(child_spec) do
+    DynamicSupervisor.start_child(@dynamic_supervisor, child_spec)
+  end
+
+  def terminate_child(child_pid) do
+    :ok = DynamicSupervisor.terminate_child(@dynamic_supervisor, child_pid)
   end
 end

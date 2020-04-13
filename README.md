@@ -1,6 +1,7 @@
 # Neutron
 
-**TODO: Add description**
+- The persistent_term API is being used so this requires OTP 21+ hence elixir 1.10+.
+- A simple apache pulsar client using their C API and nifs. Right now it's config-lite and uses the number of schedulers for the listener and io threads and 1 global client.
 
 ## Installation
 
