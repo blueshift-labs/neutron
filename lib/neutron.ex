@@ -9,8 +9,10 @@ defmodule Neutron do
     :erlang.load_nif('./priv/neutron_nif', 0)
   end
 
+  # todo super simple sync produce and then more complex pulsar_producer_send_async
+  # which should follow same pattern as the consumer with callback
   def test_produce(client_ref) do
-    raise "NIF test/1 not implemented"
+    raise "NIF test_produce/1 not implemented"
   end
 
   def make_client(config_map) do
@@ -19,6 +21,10 @@ defmodule Neutron do
 
   def destroy_client(client_ref) do
     raise "NIF destroy_client/1 not implemented"
+  end
+
+  def do_consume(client_ref, config) do
+    raise "NIF do_consume/2 not implemented"
   end
 
   # need start_client dirty IO
