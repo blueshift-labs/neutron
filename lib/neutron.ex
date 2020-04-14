@@ -11,8 +11,8 @@ defmodule Neutron do
 
   # todo super simple sync produce and then more complex pulsar_producer_send_async
   # which should follow same pattern as the consumer with callback
-  def test_produce(client_ref) do
-    raise "NIF test_produce/1 not implemented"
+  def sync_produce(client_ref, topic, message) do
+    raise "NIF sync_produce/3 not implemented"
   end
 
   def make_client(config_map) do
@@ -27,19 +27,21 @@ defmodule Neutron do
     raise "NIF do_consume/2 not implemented"
   end
 
-  # need start_client dirty IO
-  # stop_client probaby not dirty IO
+  def ack(consumer_ref, message_id) do
+    raise "NIF ack/2 not implemented"
+  end
 
-  # start consumer don't think need dirty IO
-  # ack message maybe dirty IO [just do a wrapper with message_id for both pos and neg]
-  # stop consumer probably dirty IO
+  def nack(consumer_ref, message_id) do
+    raise "NIF nack/2 not implemented"
+  end
 
-  # consumer_types
-  def start_consumer(topic, subscription, config \\ []) do
-    # in the C++ code the default is exclusive
-    client_ref = Neutron.PulsarClient.get_client()
-    Neutron.PulsarConsumer.start(topic, subscription, config)
-    # call start for pulsar_consumer with right params which should do the nif stuff
-    # pass-in the ref and callback and client, topic, sub
+  def destroy_consumer(consumer_ref) do
+    raise "NIF destroy_consumer/1 not implemented"
+  end
+
+  def start_consumer() do
+    # in the C++ code the default is exclusive this defaults to shared subscription
+    # ToDo flesh this out with more args and better API
+    Neutron.PulsarConsumer.start_link([])
   end
 end

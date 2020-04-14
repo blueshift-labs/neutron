@@ -7,7 +7,14 @@ defmodule Neutron.PulsarClient do
     # todo make these possible to pass-in with function call
     pulsar_url = Application.get_env(:neutron, :url, "pulsar://localhost:6650")
     thread_count_to_use = System.schedulers_online()
-    client_ref = Neutron.make_client(%{io_threads: thread_count_to_use, msg_listener_threads: thread_count_to_use, url: pulsar_url})
+
+    client_ref =
+      Neutron.make_client(%{
+        io_threads: thread_count_to_use,
+        msg_listener_threads: thread_count_to_use,
+        url: pulsar_url
+      })
+
     :persistent_term.put(@client_key, client_ref)
   end
 
@@ -20,5 +27,4 @@ defmodule Neutron.PulsarClient do
     :ok = Neutron.destroy_client(client_ref)
     :persistent_term.erase(@client_key)
   end
-
 end

@@ -14,23 +14,36 @@ typedef struct {
     ErlNifPid callback_pid;
 } pulsar_consumer;
 
+typedef struct {
+    pulsar_message_id_t *msg_id;
+} pulsar_msg_id;
+
 static ErlNifResourceType *nif_pulsar_client_type = NULL;
 static ErlNifResourceType *nif_pulsar_consumer_type = NULL;
+static ErlNifResourceType *nif_pulsar_msg_id_type = NULL;
 
 static void
 destruct_pulsar_client(ErlNifEnv *env, void *arg)
 {
-    pulsar_client *pulsar_client = arg;
-    pulsar_client->client = NULL;
-    enif_free(pulsar_client);
+    pulsar_client *p_client = arg;
+    p_client->client = NULL;
+    enif_free(p_client);
 }
 
 static void
 destruct_pulsar_consumer(ErlNifEnv *env, void *arg)
 {
-    pulsar_consumer *pulsar_consumer = arg;
-    pulsar_consumer->consumer = NULL;
-    enif_free(pulsar_consumer);
+    pulsar_consumer *p_consumer = arg;
+    p_consumer->consumer = NULL;
+    enif_free(p_consumer);
+}
+
+static void
+destruct_pulsar_msg_id(ErlNifEnv *env, void *arg)
+{
+    pulsar_msg_id *p_msg_id = arg;
+    p_msg_id->msg_id = NULL;
+    enif_free(p_msg_id);
 }
 
 static ERL_NIF_TERM
@@ -125,30 +138,36 @@ ERL_NIF_TERM destroy_client(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_client *p_client;
     if (!enif_get_resource(env, argv[0], nif_pulsar_client_type, (void **) &p_client))
     {
-        return make_error_tuple(env, "couldn't retrieve resource from given argument");
+        return make_error_tuple(env, "couldn't retrieve client resource from given reference");
     }
     pulsar_client_close(p_client->client);
     pulsar_client_free(p_client->client);
     p_client->client = NULL;
-    return enif_make_tuple1(env, make_atom(env, "ok"));
+    return make_atom(env, "ok");
 }
 
 static void listener_callback(pulsar_consumer_t* consumer, pulsar_message_t* message, void* ctx) {
     ErlNifPid actual_pid = *(ErlNifPid *)ctx;
+
     ErlNifBinary bin;
     ERL_NIF_TERM ret_bin;
     ErlNifEnv* env = enif_alloc_env();
     ERL_NIF_TERM temp = enif_make_string(env, pulsar_message_get_data(message), ERL_NIF_LATIN1);
     enif_inspect_iolist_as_binary(env, temp, &bin);
     ret_bin = enif_make_binary(env, &bin);
-    ERL_NIF_TERM int_term = enif_make_int64(env, pulsar_message_get_message_id(message));
 
-    enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "listener_callback"), ret_bin, int_term));
+    pulsar_msg_id *p_msg_id;
+    p_msg_id = enif_alloc_resource(nif_pulsar_msg_id_type, sizeof(pulsar_msg_id));
+
+    p_msg_id->msg_id = NULL;
+    p_msg_id->msg_id = pulsar_message_get_message_id(message);
+
+    ERL_NIF_TERM p_msg_id_res = enif_make_resource(env, p_msg_id);
+    enif_release_resource(p_msg_id);
+
+    enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "listener_callback"), ret_bin, p_msg_id_res));
 
     enif_free_env(env);
-
-    // todo remove the below and do seperate function for them
-    pulsar_consumer_acknowledge(consumer, message);
     pulsar_message_free(message);
 }
 
@@ -157,14 +176,13 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_client *p_client;
     if (!enif_get_resource(env, argv[0], nif_pulsar_client_type, (void **) &p_client))
     {
-        return make_error_tuple(env, "couldn't retrieve resource from given argument");
+        return make_error_tuple(env, "couldn't retrieve client resource from given reference");
     }
 
     if(p_client->client == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed client");
     }
-
 
     ERL_NIF_TERM send_back_to_pid_atm = make_atom(env, "send_back_to_pid");
     ERL_NIF_TERM subscription_atm = make_atom(env, "subscription");
@@ -229,7 +247,7 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_consumer_t *consumer;
     pulsar_result res = pulsar_client_subscribe(p_client->client, topic_str, subscription_str, consumer_conf, &consumer);
     if (res != pulsar_result_Ok) {
-        return make_error_tuple(env, "failed to make pulsar consumer\n");
+        return make_error_tuple(env, "failed to make pulsar consumer");
     }
     pulsar_consumer_configuration_free(consumer_conf);
     p_consumer->consumer = consumer;
@@ -240,12 +258,88 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     return enif_make_tuple2(env, make_atom(env, "ok"), p_consumer_res);
 }
 
-ERL_NIF_TERM test_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    pulsar_consumer *p_consumer;
+    if (!enif_get_resource(env, argv[0], nif_pulsar_consumer_type, (void **) &p_consumer))
+    {
+        return make_error_tuple(env, "couldn't retrieve consumer resource from given reference");
+    }
+
+
+    if(p_consumer->consumer == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed consumer");
+    }
+
+    pulsar_msg_id *p_msg_id;
+    if (!enif_get_resource(env, argv[1], nif_pulsar_msg_id_type, (void **) &p_msg_id))
+    {
+        return make_error_tuple(env, "couldn't retrieve msg_id resource from given reference");
+    }
+
+    if(p_msg_id->msg_id == NULL)
+    {
+        return make_error_tuple(env, "passed-in an invalid msg_id");
+    }
+
+    pulsar_result res = pulsar_consumer_acknowledge_id(p_consumer->consumer, p_msg_id->msg_id);
+    if (res != pulsar_result_Ok) {
+        return make_error_tuple(env, "failed to ack");
+    } else {
+        return make_atom(env, "ok");
+    }
+}
+
+ERL_NIF_TERM nack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    pulsar_consumer *p_consumer;
+    if (!enif_get_resource(env, argv[0], nif_pulsar_consumer_type, (void **) &p_consumer))
+    {
+        return make_error_tuple(env, "couldn't retrieve consumer resource from given reference");
+    }
+
+    if(p_consumer->consumer == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed consumer");
+    }
+
+    pulsar_msg_id *p_msg_id;
+    if (!enif_get_resource(env, argv[1], nif_pulsar_msg_id_type, (void **) &p_msg_id))
+    {
+        return make_error_tuple(env, "couldn't retrieve msg_id resource from given reference");
+    }
+
+    if(p_msg_id->msg_id == NULL)
+    {
+        return make_error_tuple(env, "passed-in an invalid msg_id");
+    }
+
+    // todo this API probably shouldn't return void
+    pulsar_consumer_negative_acknowledge_id(p_consumer->consumer, p_msg_id->msg_id);
+    return make_atom(env, "ok");
+}
+
+ERL_NIF_TERM destroy_consumer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    pulsar_consumer *p_consumer;
+    if (!enif_get_resource(env, argv[0], nif_pulsar_consumer_type, (void **) &p_consumer))
+    {
+        return make_error_tuple(env, "couldn't retrieve consumer resource from given reference");
+    }
+    pulsar_consumer_close(p_consumer->consumer);
+    pulsar_consumer_free(p_consumer->consumer);
+    p_consumer->consumer = NULL;
+
+    return make_atom(env, "ok");
+}
+
+ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     pulsar_client *p_client;
     if (!enif_get_resource(env, argv[0], nif_pulsar_client_type, (void **) &p_client))
     {
-        return make_error_tuple(env, "couldn't retrieve resource from given argument");
+        return make_error_tuple(env, "couldn't retrieve client resource from given reference");
     }
 
     if(p_client->client == NULL)
@@ -253,12 +347,32 @@ ERL_NIF_TERM test_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "passed-in a destroyed client");
     }
 
+    ErlNifBinary topic_bin;
+
+    int topic_ret = enif_inspect_binary(env, argv[1], &topic_bin);
+    if (!topic_ret)
+    {
+        return make_error_tuple(env, "failed to create topic binary from input");
+    }
+
+    const char *topic_str = strndup((char*) topic_bin.data, topic_bin.size);
+
+    ErlNifBinary msg_bin;
+
+    int msg_ret = enif_inspect_binary(env, argv[2], &msg_bin);
+    if (!msg_ret)
+    {
+        return make_error_tuple(env, "failed to create message binary from input");
+    }
+
+    const char *msg_str = strndup((char*) msg_bin.data, msg_bin.size);
+
     pulsar_producer_configuration_t* producer_conf = pulsar_producer_configuration_create();
     pulsar_producer_configuration_set_batching_enabled(producer_conf, 1);
 
     pulsar_producer_t *producer;
 
-    pulsar_result err = pulsar_client_create_producer(p_client->client, "my-topic", producer_conf, &producer);
+    pulsar_result err = pulsar_client_create_producer(p_client->client, topic_str, producer_conf, &producer);
 
     pulsar_producer_configuration_free(producer_conf);
 
@@ -266,9 +380,8 @@ ERL_NIF_TERM test_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "failed to make pulsar producer");
     }
 
-    const char* data = "my-content";
     pulsar_message_t* message = pulsar_message_create();
-    pulsar_message_set_content(message, data, strlen(data));
+    pulsar_message_set_content(message, msg_str, strlen(msg_str));
 
     err = pulsar_producer_send(producer, message);
 
@@ -282,7 +395,7 @@ ERL_NIF_TERM test_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_producer_close(producer);
     pulsar_producer_free(producer);
 
-    return enif_make_tuple1(env, make_atom(env, "ok"));
+    return make_atom(env, "ok");
 }
 
 /*
@@ -292,6 +405,7 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
 {
     ErlNifResourceType *rt_client;
     ErlNifResourceType *rt_consumer;
+    ErlNifResourceType *rt_msg_id;
 
     rt_client = enif_open_resource_type(env, "neutron_nif", "pulsar_client", destruct_pulsar_client, ERL_NIF_RT_CREATE, NULL);
     if (!rt_client) return -1;
@@ -299,8 +413,12 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     rt_consumer = enif_open_resource_type(env, "neutron_nif", "pulsar_consumer", destruct_pulsar_consumer, ERL_NIF_RT_CREATE, NULL);
     if (!rt_consumer) return -1;
 
+    rt_msg_id = enif_open_resource_type(env, "neutron_nif", "pulsar_msg_id", destruct_pulsar_msg_id, ERL_NIF_RT_CREATE, NULL);
+    if (!rt_msg_id) return -1;
+
     nif_pulsar_client_type = rt_client;
     nif_pulsar_consumer_type = rt_consumer;
+    nif_pulsar_msg_id_type = rt_msg_id;
 
     return 0;
 }
@@ -317,10 +435,13 @@ static int on_upgrade(ErlNifEnv* env, void** priv, void** old_priv_data, ERL_NIF
 
 ErlNifFunc nif_funcs[] =
 {
-    {"test_produce", 1, test_produce, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"sync_produce", 3, sync_produce, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"make_client", 1, make_client, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"destroy_client", 1, destroy_client, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"do_consume", 2, do_consume},
+    {"ack", 2, ack, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"nack", 2, nack, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"destroy_consumer", 1, destroy_consumer, ERL_NIF_DIRTY_JOB_IO_BOUND},
 };
 
 ERL_NIF_INIT(Elixir.Neutron, nif_funcs, on_load, on_reload, on_upgrade, NULL)

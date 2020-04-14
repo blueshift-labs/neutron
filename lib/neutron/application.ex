@@ -16,7 +16,7 @@ defmodule Neutron.Application do
        name: @dynamic_supervisor,
        max_restarts: 2_000,
        shutdown: :infinity,
-       max_seconds: 1},
+       max_seconds: 1}
     ]
 
     opts = [strategy: :one_for_one, name: Neutron.Supervisor, shutdown: :infinity]
