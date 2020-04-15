@@ -3,18 +3,19 @@ defmodule Neutron.PulsarConsumer do
 
   use GenServer
 
-  alias Neutron.PulsarClient
+  alias Neutron.{PulsarClient, PulsarNifs}
 
-  # ToDo flesh this out
-  # def start(topic, subscription, config) do
-  #   # todo make child_spec
-  #   Neutron.Application.start_child(%{})
-  # end
+  def child_spec(arg \\ []) do
+    %{
+      id: :"PulsarConsumer-#{:erlang.unique_integer([:monotonic])}",
+      start: {Neutron.PulsarConsumer, :start_link, [arg]}
+    }
+  end
 
   def start_link(arg) do
     callback_module = Keyword.get(arg, :topic, Test)
 
-    if !is_list(callback_module.module_info[:attributes][:behaviour]) and
+    if !is_list(callback_module.module_info[:attributes][:behaviour]) ||
          !Enum.member?(
            callback_module.module_info[:attributes][:behaviour],
            Neutron.PulsarConsumerCallback
@@ -38,7 +39,7 @@ defmodule Neutron.PulsarConsumer do
     {:ok, client_ref} = PulsarClient.get_client()
     # todo make these passed-in and maybe add-in consumer_name
     full_config = Map.put(config, :send_back_to_pid, self())
-    {:ok, consumer_ref} = Neutron.do_consume(client_ref, full_config)
+    {:ok, consumer_ref} = PulsarNifs.do_consume(client_ref, full_config)
     {:ok, %{config: config, consumer_ref: consumer_ref}}
   end
 
@@ -47,8 +48,6 @@ defmodule Neutron.PulsarConsumer do
         {:listener_callback, msg, msg_id_ref},
         %{config: %{callback_module: callback_module}, consumer_ref: consumer_ref} = state
       ) do
-    # IO.inspect("received a message #{msg} with msg_id_ref #{msg_id_ref}")
-
     res =
       try do
         callback_module.handle_message(msg)
@@ -58,9 +57,10 @@ defmodule Neutron.PulsarConsumer do
 
     case res do
       {:ok, _any} ->
-        :ok = Neutron.ack(consumer_ref, msg_id_ref)
+        :ok = PulsarNifs.ack(consumer_ref, msg_id_ref)
+
       {:error, _any} ->
-        :ok = Neutron.nack(consumer_ref, msg_id_ref)
+        :ok = PulsarNifs.nack(consumer_ref, msg_id_ref)
     end
 
     {:noreply, state}
@@ -68,7 +68,7 @@ defmodule Neutron.PulsarConsumer do
 
   @impl true
   def terminate(_reason, %{consumer_ref: consumer_ref} = state) do
-    :ok = Neutron.destroy_consumer(consumer_ref)
+    :ok = PulsarNifs.destroy_consumer(consumer_ref)
 
     state
   end

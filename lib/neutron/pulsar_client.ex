@@ -1,6 +1,8 @@
 defmodule Neutron.PulsarClient do
   @moduledoc false
 
+  alias Neutron.PulsarNifs
+
   @client_key :pulsar_client
 
   def start_client do
@@ -9,7 +11,7 @@ defmodule Neutron.PulsarClient do
     thread_count_to_use = System.schedulers_online()
 
     client_ref =
-      Neutron.make_client(%{
+      PulsarNifs.make_client(%{
         io_threads: thread_count_to_use,
         msg_listener_threads: thread_count_to_use,
         url: pulsar_url
@@ -24,7 +26,7 @@ defmodule Neutron.PulsarClient do
 
   def stop_client do
     client_ref = :persistent_term.get(@client_key)
-    :ok = Neutron.destroy_client(client_ref)
+    :ok = PulsarNifs.destroy_client(client_ref)
     :persistent_term.erase(@client_key)
   end
 end

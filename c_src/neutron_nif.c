@@ -444,4 +444,4 @@ ErlNifFunc nif_funcs[] =
     {"destroy_consumer", 1, destroy_consumer, ERL_NIF_DIRTY_JOB_IO_BOUND},
 };
 
-ERL_NIF_INIT(Elixir.Neutron, nif_funcs, on_load, on_reload, on_upgrade, NULL)
+ERL_NIF_INIT(Elixir.Neutron.PulsarNifs, nif_funcs, on_load, on_reload, on_upgrade, NULL)
