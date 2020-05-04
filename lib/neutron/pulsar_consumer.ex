@@ -13,14 +13,16 @@ defmodule Neutron.PulsarConsumer do
   end
 
   def start_link(arg) do
-    callback_module = Keyword.get(arg, :topic, Test)
+    callback_module = Keyword.get(arg, :callback_module, Test)
 
-    if !is_list(callback_module.module_info[:attributes][:behaviour]) ||
-         !Enum.member?(
-           callback_module.module_info[:attributes][:behaviour],
-           Neutron.PulsarConsumerCallback
-         ) do
-      raise "error you need to implement the Neutron.PulsarConsumerCallback on your consumer"
+    behaviours =
+      callback_module.module_info[:attributes]
+      |> Keyword.pop_values(:behaviour)
+      |> elem(0)
+      |> List.flatten()
+
+    if !Enum.member?(behaviours, Neutron.PulsarConsumerCallback) do
+      raise "error you need to implement the Neutron.PulsarConsumerCallback for your consumer"
     end
 
     subscription = Keyword.get(arg, :subscription, "my-subscription")

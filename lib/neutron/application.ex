@@ -29,7 +29,6 @@ defmodule Neutron.Application do
 
   def stop(_state) do
     DynamicSupervisor.stop(@dynamic_supervisor)
-    # hopefully all producers and consumers clean-up in genServer stop correctly
     PulsarClient.stop_client()
   end
 

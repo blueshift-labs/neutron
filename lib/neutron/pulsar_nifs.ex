@@ -5,8 +5,6 @@ defmodule Neutron.PulsarNifs do
     :erlang.load_nif('./priv/neutron_nif', 0)
   end
 
-  # todo pulsar_producer send_async
-  # which should follow same pattern as the consumer with callback
   def sync_produce(client_ref, topic, message) do
     raise "NIF sync_produce/3 not implemented"
   end
@@ -33,5 +31,17 @@ defmodule Neutron.PulsarNifs do
 
   def destroy_consumer(consumer_ref) do
     raise "NIF destroy_consumer/1 not implemented"
+  end
+
+  def create_async_producer(client_ref, topic, callback_pid) do
+    raise "NIF create_async_producer/3 not implemented"
+  end
+
+  def async_produce(producer_ref, msg) do
+    raise "NIF async_produce/2 not implemented"
+  end
+
+  def destroy_producer(producer_ref) do
+    raise "NIF destroy_producer/1 not implemented"
   end
 end

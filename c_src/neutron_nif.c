@@ -18,9 +18,15 @@ typedef struct {
     pulsar_message_id_t *msg_id;
 } pulsar_msg_id;
 
+typedef struct {
+    pulsar_producer_t *producer;
+    ErlNifPid callback_pid;
+} pulsar_producer;
+
 static ErlNifResourceType *nif_pulsar_client_type = NULL;
 static ErlNifResourceType *nif_pulsar_consumer_type = NULL;
 static ErlNifResourceType *nif_pulsar_msg_id_type = NULL;
+static ErlNifResourceType *nif_pulsar_producer_type = NULL;
 
 static void
 destruct_pulsar_client(ErlNifEnv *env, void *arg)
@@ -41,9 +47,14 @@ destruct_pulsar_consumer(ErlNifEnv *env, void *arg)
 static void
 destruct_pulsar_msg_id(ErlNifEnv *env, void *arg)
 {
-    pulsar_msg_id *p_msg_id = arg;
-    p_msg_id->msg_id = NULL;
-    enif_free(p_msg_id);
+}
+
+static void
+destruct_pulsar_producer(ErlNifEnv *env, void *arg)
+{
+    pulsar_producer *p_producer = arg;
+    p_producer->producer = NULL;
+    enif_free(p_producer);
 }
 
 static ERL_NIF_TERM
@@ -227,7 +238,6 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     const char *topic_str = strndup((char*) bin_topic.data, bin_topic.size);
 
-
     pulsar_consumer *p_consumer;
 
     p_consumer = enif_alloc_resource(nif_pulsar_consumer_type, sizeof(pulsar_consumer));
@@ -284,9 +294,14 @@ ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
     pulsar_result res = pulsar_consumer_acknowledge_id(p_consumer->consumer, p_msg_id->msg_id);
+
     if (res != pulsar_result_Ok) {
+        pulsar_message_id_free(p_msg_id->msg_id);
+        enif_release_resource(p_msg_id);
         return make_error_tuple(env, "failed to ack");
     } else {
+        pulsar_message_id_free(p_msg_id->msg_id);
+        enif_release_resource(p_msg_id);
         return make_atom(env, "ok");
     }
 }
@@ -315,8 +330,11 @@ ERL_NIF_TERM nack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "passed-in an invalid msg_id");
     }
 
-    // todo this API probably shouldn't return void
+    // this API doesn't nack on servers and only on client
+    // this can lead to unbounded growth with nacked msg_ids
+    // but there's no mechanism to prevent this
     pulsar_consumer_negative_acknowledge_id(p_consumer->consumer, p_msg_id->msg_id);
+
     return make_atom(env, "ok");
 }
 
@@ -398,6 +416,135 @@ ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     return make_atom(env, "ok");
 }
 
+static void delivery_callback(pulsar_result result, pulsar_message_id_t* msg_id, void* ctx) {
+    ErlNifPid actual_pid = *(ErlNifPid *)ctx;
+    ErlNifBinary bin;
+    ERL_NIF_TERM ret_bin;
+    ErlNifEnv* env = enif_alloc_env();
+    ERL_NIF_TERM temp = enif_make_string(env, pulsar_message_id_str(msg_id), ERL_NIF_LATIN1);
+    enif_inspect_iolist_as_binary(env, temp, &bin);
+    ret_bin = enif_make_binary(env, &bin);
+
+    // todo msg_id stuff
+
+    if (result == pulsar_result_Ok) {
+        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "delivery_callback"), make_atom(env, "ok"), ret_bin));
+    } else {
+        // todo error stuff
+        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "delivery_callback"), make_atom(env, "error"), ret_bin));
+    }
+
+    pulsar_message_id_free(msg_id);
+    enif_free_env(env);
+}
+
+ERL_NIF_TERM create_async_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    pulsar_client *p_client;
+    if (!enif_get_resource(env, argv[0], nif_pulsar_client_type, (void **) &p_client))
+    {
+        return make_error_tuple(env, "couldn't retrieve client resource from given reference");
+    }
+
+    if(p_client->client == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed client");
+    }
+
+    ErlNifBinary topic_bin;
+
+    int topic_ret = enif_inspect_binary(env, argv[1], &topic_bin);
+    if (!topic_ret)
+    {
+        return make_error_tuple(env, "failed to create topic binary from input");
+    }
+
+    const char *topic_str = strndup((char*) topic_bin.data, topic_bin.size);
+
+    ErlNifPid send_back_to_pid;
+    if (!enif_get_local_pid(env, argv[2], &send_back_to_pid)) {
+        return make_error_tuple(env, "failed to make pulsar producer callback pid");
+    }
+
+    // todo support more producer options
+    pulsar_producer_configuration_t* producer_conf = pulsar_producer_configuration_create();
+    pulsar_producer_configuration_set_batching_enabled(producer_conf, 1);
+
+    pulsar_producer_t *producer;
+
+    pulsar_result err = pulsar_client_create_producer(p_client->client, topic_str, producer_conf, &producer);
+
+    pulsar_producer_configuration_free(producer_conf);
+
+    if (err != pulsar_result_Ok) {
+        return make_error_tuple(env, "failed to make pulsar producer");
+    }
+
+    pulsar_producer *p_producer;
+
+    p_producer = enif_alloc_resource(nif_pulsar_producer_type, sizeof(pulsar_producer));
+    if (!p_producer)
+    {
+        return make_error_tuple(env, "no_memory for creating pulsar producer");
+    }
+
+    p_producer->producer = NULL;
+    p_producer->producer = producer;
+    p_producer->callback_pid = send_back_to_pid;
+
+    ERL_NIF_TERM p_producer_res = enif_make_resource(env, p_producer);
+    enif_release_resource(p_producer);
+
+    return enif_make_tuple2(env, make_atom(env, "ok"), p_producer_res);
+}
+
+ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    pulsar_producer *p_producer;
+    if (!enif_get_resource(env, argv[0], nif_pulsar_producer_type, (void **) &p_producer))
+    {
+        return make_error_tuple(env, "couldn't retrieve producer resource from given reference");
+    }
+
+    if(p_producer->producer == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed producer");
+    }
+
+    ErlNifBinary msg_bin;
+
+    int msg_ret = enif_inspect_binary(env, argv[1], &msg_bin);
+    if (!msg_ret)
+    {
+        return make_error_tuple(env, "failed to create message binary from input");
+    }
+
+    const char *msg_str = strndup((char*) msg_bin.data, msg_bin.size);
+
+    pulsar_message_t* message = pulsar_message_create();
+    pulsar_message_set_content(message, msg_str, strlen(msg_str));
+
+    pulsar_producer_send_async(p_producer->producer, message, delivery_callback, &p_producer->callback_pid);
+
+    pulsar_message_free(message);
+
+    return make_atom(env, "ok");
+}
+
+ERL_NIF_TERM destroy_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    pulsar_producer *p_producer;
+    if (!enif_get_resource(env, argv[0], nif_pulsar_producer_type, (void **) &p_producer))
+    {
+        return make_error_tuple(env, "couldn't retrieve producer resource from given reference");
+    }
+    pulsar_producer_close(p_producer->producer);
+    pulsar_producer_free(p_producer->producer);
+    p_producer->producer = NULL;
+
+    return make_atom(env, "ok");
+}
+
 /*
  * Below is used for nif lifecycle
  */
@@ -406,6 +553,7 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     ErlNifResourceType *rt_client;
     ErlNifResourceType *rt_consumer;
     ErlNifResourceType *rt_msg_id;
+    ErlNifResourceType *rt_producer;
 
     rt_client = enif_open_resource_type(env, "neutron_nif", "pulsar_client", destruct_pulsar_client, ERL_NIF_RT_CREATE, NULL);
     if (!rt_client) return -1;
@@ -416,9 +564,13 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     rt_msg_id = enif_open_resource_type(env, "neutron_nif", "pulsar_msg_id", destruct_pulsar_msg_id, ERL_NIF_RT_CREATE, NULL);
     if (!rt_msg_id) return -1;
 
+    rt_producer = enif_open_resource_type(env, "neutron_nif", "pulsar_producer", destruct_pulsar_producer, ERL_NIF_RT_CREATE, NULL);
+    if (!rt_producer) return -1;
+
     nif_pulsar_client_type = rt_client;
     nif_pulsar_consumer_type = rt_consumer;
     nif_pulsar_msg_id_type = rt_msg_id;
+    nif_pulsar_producer_type = rt_producer;
 
     return 0;
 }
@@ -442,6 +594,9 @@ ErlNifFunc nif_funcs[] =
     {"ack", 2, ack, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"nack", 2, nack, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"destroy_consumer", 1, destroy_consumer, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"create_async_producer", 3, create_async_producer, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"async_produce", 2, async_produce},
+    {"destroy_producer", 1, destroy_producer, ERL_NIF_DIRTY_JOB_IO_BOUND},
 };
 
 ERL_NIF_INIT(Elixir.Neutron.PulsarNifs, nif_funcs, on_load, on_reload, on_upgrade, NULL)
