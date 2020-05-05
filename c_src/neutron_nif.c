@@ -198,8 +198,9 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     ERL_NIF_TERM send_back_to_pid_atm = make_atom(env, "send_back_to_pid");
     ERL_NIF_TERM subscription_atm = make_atom(env, "subscription");
     ERL_NIF_TERM topic_atm = make_atom(env, "topic");
+    ERL_NIF_TERM type_int_atm = make_atom(env, "type_int");
 
-    ERL_NIF_TERM send_back_to_pid_term, topic_term, subscription_term;
+    ERL_NIF_TERM send_back_to_pid_term, topic_term, subscription_term, type_int_term;
     if (!enif_get_map_value(env, argv[1], send_back_to_pid_atm, &send_back_to_pid_term))
     {
         return make_error_tuple(env, "failed to make pulsar consumer send_back_to_pid configuration");
@@ -213,6 +214,11 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     if (!enif_get_map_value(env, argv[1], topic_atm, &topic_term))
     {
         return make_error_tuple(env, "failed to make pulsar consumer topic configuration");
+    }
+
+    if (!enif_get_map_value(env, argv[1], type_int_atm, &type_int_term))
+    {
+        return make_error_tuple(env, "failed to make pulsar consumer type configuration");
     }
 
     ErlNifPid send_back_to_pid;
@@ -238,6 +244,13 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     const char *topic_str = strndup((char*) bin_topic.data, bin_topic.size);
 
+    int consumer_type_int;
+    if (!enif_get_int(env, type_int_term, &consumer_type_int))
+    {
+        return make_error_tuple(env, "failed to create consumer type from input type int");
+    }
+    pulsar_consumer_type consumer_type = (pulsar_consumer_type)consumer_type_int;
+
     pulsar_consumer *p_consumer;
 
     p_consumer = enif_alloc_resource(nif_pulsar_consumer_type, sizeof(pulsar_consumer));
@@ -251,7 +264,7 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     pulsar_consumer_configuration_t *consumer_conf = pulsar_consumer_configuration_create();
     // ToDo make below configurable right now it just uses shared subscription
-    pulsar_consumer_configuration_set_consumer_type(consumer_conf, pulsar_ConsumerShared);
+    pulsar_consumer_configuration_set_consumer_type(consumer_conf, consumer_type);
     pulsar_consumer_configuration_set_message_listener(consumer_conf, listener_callback, &p_consumer->callback_pid);
 
     pulsar_consumer_t *consumer;
@@ -425,12 +438,9 @@ static void delivery_callback(pulsar_result result, pulsar_message_id_t* msg_id,
     enif_inspect_iolist_as_binary(env, temp, &bin);
     ret_bin = enif_make_binary(env, &bin);
 
-    // todo msg_id stuff
-
     if (result == pulsar_result_Ok) {
         enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "delivery_callback"), make_atom(env, "ok"), ret_bin));
     } else {
-        // todo error stuff
         enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "delivery_callback"), make_atom(env, "error"), ret_bin));
     }
 

@@ -7,7 +7,7 @@ defmodule Neutron do
 
   # ToDo flesh this out with more args and better API
   def start_consumer(args \\ []) do
-    # in the C++ code the default is exclusive this defaults to shared subscription
+    # in the C/C++ code the default is exclusive this defaults to shared subscription
     Neutron.Application.start_child(PulsarConsumer.child_spec(args))
   end
 

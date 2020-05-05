@@ -27,21 +27,20 @@ defmodule Neutron.PulsarConsumer do
 
     subscription = Keyword.get(arg, :subscription, "my-subscription")
     topic = Keyword.get(arg, :topic, "my-topic")
+    consumer_type = Keyword.get(arg, :consumer_type, :shared)
 
     GenServer.start_link(__MODULE__, %{
       topic: topic,
       subscription: subscription,
-      callback_module: callback_module
+      callback_module: callback_module,
+      consumer_type: consumer_type
     })
   end
 
   @impl true
   def init(config) do
     Process.flag(:trap_exit, true)
-    {:ok, client_ref} = PulsarClient.get_client()
-    # todo make these passed-in and maybe add-in consumer_name
-    full_config = Map.put(config, :send_back_to_pid, self())
-    {:ok, consumer_ref} = PulsarNifs.do_consume(client_ref, full_config)
+    {:ok, consumer_ref} = create_consumer(config)
     {:ok, %{config: config, consumer_ref: consumer_ref}}
   end
 
@@ -73,5 +72,34 @@ defmodule Neutron.PulsarConsumer do
     :ok = PulsarNifs.destroy_consumer(consumer_ref)
 
     state
+  end
+
+  def create_consumer(%{consumer_type: consumer_type} = config) do
+    {:ok, client_ref} = PulsarClient.get_client()
+
+    consumer_enum_int =
+      case consumer_type do
+        :exclusive ->
+          0
+
+        :shared ->
+          1
+
+        :failover ->
+          2
+
+        :key_shared ->
+          3
+
+        _ ->
+          raise "Invalid :consumer_type specified. Valid types are :exclusive :shared :failover or :key_shared"
+      end
+
+    full_config =
+      config
+      |> Map.put(:type_int, consumer_enum_int)
+      |> Map.put(:send_back_to_pid, self())
+
+    PulsarNifs.do_consume(client_ref, full_config)
   end
 end
