@@ -60,6 +60,9 @@ defmodule Neutron.PulsarConsumer do
       {:ok, _any} ->
         :ok = PulsarNifs.ack(consumer_ref, msg_id_ref)
 
+      {:ack_all, _any} ->
+        :ok = PulsarNifs.ack_all(consumer_ref, msg_id_ref)
+
       {:error, _any} ->
         :ok = PulsarNifs.nack(consumer_ref, msg_id_ref)
     end

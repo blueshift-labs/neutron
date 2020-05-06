@@ -25,6 +25,10 @@ defmodule Neutron.PulsarNifs do
     raise "NIF ack/2 not implemented"
   end
 
+  def ack_all(consumer_ref, message_id) do
+    raise "NIF ack/2 not implemented"
+  end
+
   def nack(consumer_ref, message_id) do
     raise "NIF nack/2 not implemented"
   end

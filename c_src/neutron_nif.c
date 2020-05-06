@@ -319,6 +319,44 @@ ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 }
 
+ERL_NIF_TERM ack_all(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    pulsar_consumer *p_consumer;
+    if (!enif_get_resource(env, argv[0], nif_pulsar_consumer_type, (void **) &p_consumer))
+    {
+        return make_error_tuple(env, "couldn't retrieve consumer resource from given reference");
+    }
+
+
+    if(p_consumer->consumer == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed consumer");
+    }
+
+    pulsar_msg_id *p_msg_id;
+    if (!enif_get_resource(env, argv[1], nif_pulsar_msg_id_type, (void **) &p_msg_id))
+    {
+        return make_error_tuple(env, "couldn't retrieve msg_id resource from given reference");
+    }
+
+    if(p_msg_id->msg_id == NULL)
+    {
+        return make_error_tuple(env, "passed-in an invalid msg_id");
+    }
+
+    pulsar_result res = pulsar_consumer_acknowledge_cumulative_id(p_consumer->consumer, p_msg_id->msg_id);
+
+    if (res != pulsar_result_Ok) {
+        pulsar_message_id_free(p_msg_id->msg_id);
+        enif_release_resource(p_msg_id);
+        return make_error_tuple(env, "failed to ack_all");
+    } else {
+        pulsar_message_id_free(p_msg_id->msg_id);
+        enif_release_resource(p_msg_id);
+        return make_atom(env, "ok");
+    }
+}
+
 ERL_NIF_TERM nack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     pulsar_consumer *p_consumer;
@@ -602,6 +640,7 @@ ErlNifFunc nif_funcs[] =
     {"destroy_client", 1, destroy_client, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"do_consume", 2, do_consume},
     {"ack", 2, ack, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"ack_all", 2, ack_all, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"nack", 2, nack, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"destroy_consumer", 1, destroy_consumer, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"create_async_producer", 3, create_async_producer, ERL_NIF_DIRTY_JOB_IO_BOUND},
