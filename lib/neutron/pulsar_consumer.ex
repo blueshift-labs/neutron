@@ -29,6 +29,10 @@ defmodule Neutron.PulsarConsumer do
     topic = Keyword.get(arg, :topic, "my-topic")
     consumer_type = Keyword.get(arg, :consumer_type, :shared)
 
+    if !is_binary(topic) || !is_binary(subscription) do
+      raise "invalid arg given. Please pass-in a String.t()"
+    end
+
     GenServer.start_link(__MODULE__, %{
       topic: topic,
       subscription: subscription,
@@ -57,13 +61,13 @@ defmodule Neutron.PulsarConsumer do
       end
 
     case res do
-      {:ok, _any} ->
+      :ack ->
         :ok = PulsarNifs.ack(consumer_ref, msg_id_ref)
 
-      {:ack_all, _any} ->
+      :ack_all ->
         :ok = PulsarNifs.ack_all(consumer_ref, msg_id_ref)
 
-      {:error, _any} ->
+      :nack ->
         :ok = PulsarNifs.nack(consumer_ref, msg_id_ref)
     end
 

@@ -1,3 +1,3 @@
 defmodule Neutron.PulsarConsumerCallback do
-  @callback handle_message(String.t()) :: {:ok, any()} | {:ack_all, any()} | {:error, any()}
+  @callback handle_message(String.t()) :: :ack | :ack_all | :nack
 end
