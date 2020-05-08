@@ -8,7 +8,8 @@ defmodule Neutron.PulsarConsumer do
   def child_spec(arg \\ []) do
     %{
       id: :"PulsarConsumer-#{:erlang.unique_integer([:monotonic])}",
-      start: {Neutron.PulsarConsumer, :start_link, [arg]}
+      start: {Neutron.PulsarConsumer, :start_link, [arg]},
+      shutdown: :infinity,
     }
   end
 
@@ -81,7 +82,7 @@ defmodule Neutron.PulsarConsumer do
     state
   end
 
-  def create_consumer(%{consumer_type: consumer_type} = config) do
+  defp create_consumer(%{consumer_type: consumer_type} = config) do
     {:ok, client_ref} = PulsarClient.get_client()
 
     consumer_enum_int =

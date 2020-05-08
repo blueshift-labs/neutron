@@ -8,7 +8,8 @@ defmodule Neutron.PulsarAsyncProducer do
   def child_spec(arg \\ []) do
     %{
       id: :"PulsarAsyncProducer-#{:erlang.unique_integer([:monotonic])}",
-      start: {Neutron.PulsarAsyncProducer, :start_link, [arg]}
+      start: {Neutron.PulsarAsyncProducer, :start_link, [arg]},
+      shutdown: :infinity
     }
   end
 
@@ -51,6 +52,15 @@ defmodule Neutron.PulsarAsyncProducer do
     catch
       _any -> {:error, :exception}
     end
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(
+        any,
+        state
+      ) do
 
     {:noreply, state}
   end

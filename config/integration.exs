@@ -4,5 +4,7 @@ import Config
 config :logger, level: :info
 
 config :neutron,
-  divo: "test/support/docker-compose.yaml",
+  divo: [
+    {DivoPulsar, [port: 8080]}
+  ],
   divo_wait: [dwell: 700, max_tries: 50]

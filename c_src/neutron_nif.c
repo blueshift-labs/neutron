@@ -40,17 +40,11 @@ static ErlNifResourceType *nif_pulsar_producer_type = NULL;
 static void
 destruct_pulsar_client(ErlNifEnv *env, void *arg)
 {
-    pulsar_client *p_client = arg;
-    p_client->client = NULL;
-    enif_free(p_client);
 }
 
 static void
 destruct_pulsar_consumer(ErlNifEnv *env, void *arg)
 {
-    pulsar_consumer *p_consumer = arg;
-    p_consumer->consumer = NULL;
-    enif_free(p_consumer);
 }
 
 static void
@@ -61,9 +55,6 @@ destruct_pulsar_msg_id(ErlNifEnv *env, void *arg)
 static void
 destruct_pulsar_producer(ErlNifEnv *env, void *arg)
 {
-    pulsar_producer *p_producer = arg;
-    p_producer->producer = NULL;
-    enif_free(p_producer);
 }
 
 static ERL_NIF_TERM
@@ -160,9 +151,15 @@ ERL_NIF_TERM destroy_client(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     {
         return make_error_tuple(env, "couldn't retrieve client resource from given reference");
     }
+
+    if (p_client->client == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed client");
+    }
     pulsar_client_close(p_client->client);
     pulsar_client_free(p_client->client);
     p_client->client = NULL;
+    enif_release_resource(p_client);
     return ATOMS.atomOk;
 }
 
@@ -199,7 +196,7 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve client resource from given reference");
     }
 
-    if(p_client->client == NULL)
+    if (p_client->client == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed client");
     }
@@ -298,7 +295,7 @@ ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
 
-    if(p_consumer->consumer == NULL)
+    if (p_consumer->consumer == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed consumer");
     }
@@ -309,7 +306,7 @@ ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve msg_id resource from given reference");
     }
 
-    if(p_msg_id->msg_id == NULL)
+    if (p_msg_id->msg_id == NULL)
     {
         return make_error_tuple(env, "passed-in an invalid msg_id");
     }
@@ -336,7 +333,7 @@ ERL_NIF_TERM ack_all(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     }
 
 
-    if(p_consumer->consumer == NULL)
+    if (p_consumer->consumer == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed consumer");
     }
@@ -347,7 +344,7 @@ ERL_NIF_TERM ack_all(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve msg_id resource from given reference");
     }
 
-    if(p_msg_id->msg_id == NULL)
+    if (p_msg_id->msg_id == NULL)
     {
         return make_error_tuple(env, "passed-in an invalid msg_id");
     }
@@ -373,7 +370,7 @@ ERL_NIF_TERM nack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve consumer resource from given reference");
     }
 
-    if(p_consumer->consumer == NULL)
+    if (p_consumer->consumer == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed consumer");
     }
@@ -384,7 +381,7 @@ ERL_NIF_TERM nack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve msg_id resource from given reference");
     }
 
-    if(p_msg_id->msg_id == NULL)
+    if (p_msg_id->msg_id == NULL)
     {
         return make_error_tuple(env, "passed-in an invalid msg_id");
     }
@@ -404,9 +401,16 @@ ERL_NIF_TERM destroy_consumer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     {
         return make_error_tuple(env, "couldn't retrieve consumer resource from given reference");
     }
+
+    if (p_consumer->consumer == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed consumer");
+    }
+
     pulsar_consumer_close(p_consumer->consumer);
     pulsar_consumer_free(p_consumer->consumer);
     p_consumer->consumer = NULL;
+    enif_release_resource(p_consumer);
 
     return ATOMS.atomOk;
 }
@@ -419,7 +423,7 @@ ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve client resource from given reference");
     }
 
-    if(p_client->client == NULL)
+    if (p_client->client == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed client");
     }
@@ -502,7 +506,7 @@ ERL_NIF_TERM create_async_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
         return make_error_tuple(env, "couldn't retrieve client resource from given reference");
     }
 
-    if(p_client->client == NULL)
+    if (p_client->client == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed client");
     }
@@ -561,7 +565,7 @@ ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve producer resource from given reference");
     }
 
-    if(p_producer->producer == NULL)
+    if (p_producer->producer == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed producer");
     }
@@ -593,9 +597,16 @@ ERL_NIF_TERM destroy_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     {
         return make_error_tuple(env, "couldn't retrieve producer resource from given reference");
     }
+
+    if (p_producer->producer == NULL)
+    {
+        return make_error_tuple(env, "passed-in a destroyed producer");
+    }
+
     pulsar_producer_close(p_producer->producer);
     pulsar_producer_free(p_producer->producer);
     p_producer->producer = NULL;
+    enif_release_resource(p_producer);
 
     return ATOMS.atomOk;
 }
