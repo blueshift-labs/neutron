@@ -6,6 +6,15 @@
 #include <string.h>
 
 typedef struct {
+    ERL_NIF_TERM atomOk;
+    ERL_NIF_TERM atomError;
+    ERL_NIF_TERM atomDelivery;
+    ERL_NIF_TERM atomListener;
+} atoms;
+
+atoms ATOMS;
+
+typedef struct {
     pulsar_client_t *client;
 } pulsar_client;
 
@@ -75,7 +84,7 @@ make_error_tuple(ErlNifEnv *env, const char *reason)
     ERL_NIF_TERM temp = enif_make_string(env, reason, ERL_NIF_LATIN1);
     enif_inspect_iolist_as_binary(env, temp, &bin);
     enif_make_binary(env, &bin);
-    return enif_make_tuple2(env, make_atom(env, "error"), enif_make_binary(env, &bin));
+    return enif_make_tuple2(env, ATOMS.atomError, enif_make_binary(env, &bin));
 }
 
 ERL_NIF_TERM make_client(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -154,7 +163,7 @@ ERL_NIF_TERM destroy_client(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_client_close(p_client->client);
     pulsar_client_free(p_client->client);
     p_client->client = NULL;
-    return make_atom(env, "ok");
+    return ATOMS.atomOk;
 }
 
 static void listener_callback(pulsar_consumer_t* consumer, pulsar_message_t* message, void* ctx) {
@@ -176,8 +185,7 @@ static void listener_callback(pulsar_consumer_t* consumer, pulsar_message_t* mes
     ERL_NIF_TERM p_msg_id_res = enif_make_resource(env, p_msg_id);
     enif_release_resource(p_msg_id);
 
-    // todo inline make_atom since hotpath
-    enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "listener_callback"), ret_bin, p_msg_id_res));
+    enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, ATOMS.atomListener, ret_bin, p_msg_id_res));
 
     enif_free_env(env);
     pulsar_message_free(message);
@@ -315,7 +323,7 @@ ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     } else {
         pulsar_message_id_free(p_msg_id->msg_id);
         enif_release_resource(p_msg_id);
-        return make_atom(env, "ok");
+        return ATOMS.atomOk;
     }
 }
 
@@ -353,7 +361,7 @@ ERL_NIF_TERM ack_all(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     } else {
         pulsar_message_id_free(p_msg_id->msg_id);
         enif_release_resource(p_msg_id);
-        return make_atom(env, "ok");
+        return ATOMS.atomOk;
     }
 }
 
@@ -386,7 +394,7 @@ ERL_NIF_TERM nack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     // but there's no mechanism to prevent this
     pulsar_consumer_negative_acknowledge_id(p_consumer->consumer, p_msg_id->msg_id);
 
-    return make_atom(env, "ok");
+    return ATOMS.atomOk;
 }
 
 ERL_NIF_TERM destroy_consumer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -400,7 +408,7 @@ ERL_NIF_TERM destroy_consumer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     pulsar_consumer_free(p_consumer->consumer);
     p_consumer->consumer = NULL;
 
-    return make_atom(env, "ok");
+    return ATOMS.atomOk;
 }
 
 ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -464,7 +472,7 @@ ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_producer_close(producer);
     pulsar_producer_free(producer);
 
-    return make_atom(env, "ok");
+    return ATOMS.atomOk;
 }
 
 static void delivery_callback(pulsar_result result, pulsar_message_id_t* msg_id, void* ctx) {
@@ -477,9 +485,9 @@ static void delivery_callback(pulsar_result result, pulsar_message_id_t* msg_id,
     ret_bin = enif_make_binary(env, &bin);
 
     if (result == pulsar_result_Ok) {
-        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "delivery_callback"), make_atom(env, "ok"), ret_bin));
+        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, ATOMS.atomDelivery, ATOMS.atomOk, ret_bin));
     } else {
-        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "delivery_callback"), make_atom(env, "error"), ret_bin));
+        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, ATOMS.atomDelivery, ATOMS.atomError, ret_bin));
     }
 
     pulsar_message_id_free(msg_id);
@@ -576,7 +584,7 @@ ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     pulsar_message_free(message);
 
-    return make_atom(env, "ok");
+    return ATOMS.atomOk;
 }
 
 ERL_NIF_TERM destroy_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -590,7 +598,7 @@ ERL_NIF_TERM destroy_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     pulsar_producer_free(p_producer->producer);
     p_producer->producer = NULL;
 
-    return make_atom(env, "ok");
+    return ATOMS.atomOk;
 }
 
 /*
@@ -598,6 +606,12 @@ ERL_NIF_TERM destroy_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
  */
 static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
 {
+
+    ATOMS.atomOk = make_atom(env, "ok");
+    ATOMS.atomError = make_atom(env, "error");
+    ATOMS.atomDelivery = make_atom(env, "delivery_callback");
+    ATOMS.atomListener = make_atom(env, "listener_callback");
+
     ErlNifResourceType *rt_client;
     ErlNifResourceType *rt_consumer;
     ErlNifResourceType *rt_msg_id;
