@@ -57,7 +57,8 @@ defmodule Neutron do
   int32 batchIndex
   """
   @spec create_async_producer(String.t(), atom()) :: GenServer.on_start()
-  def create_async_producer(topic, callback_module) when is_binary(topic) and is_atom(callback_module) do
+  def create_async_producer(topic, callback_module)
+      when is_binary(topic) and is_atom(callback_module) do
     PulsarAsyncProducer.start_link(topic: topic, callback_module: callback_module)
   end
 

@@ -29,7 +29,8 @@ defmodule Neutron.MixProject do
     [
       {:elixir_make, "~> 0.6", runtime: false},
       {:divo, "~> 1.1.9", only: [:dev, :integration]},
-      {:credo, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:stream_data, "~> 0.1", only: [:test, :integration]}
     ]
   end
 

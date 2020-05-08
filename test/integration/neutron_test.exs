@@ -2,7 +2,7 @@ defmodule NeutronTest do
   use ExUnit.Case
   use Divo
 
-  test "hello world" do
+  test "roundtrip produce and consumer" do
     assert true
   end
 end

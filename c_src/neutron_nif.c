@@ -522,7 +522,6 @@ ERL_NIF_TERM create_async_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
         return make_error_tuple(env, "failed to make pulsar producer callback pid");
     }
 
-    // todo support more producer options
     pulsar_producer_configuration_t* producer_conf = pulsar_producer_configuration_create();
     pulsar_producer_configuration_set_batching_enabled(producer_conf, 1);
 
