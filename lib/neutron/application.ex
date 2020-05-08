@@ -21,7 +21,6 @@ defmodule Neutron.Application do
 
     opts = [strategy: :one_for_one, name: Neutron.Supervisor, shutdown: :infinity]
 
-    # todo pass-in configs here
     PulsarClient.start_client()
 
     Supervisor.start_link(children, opts)

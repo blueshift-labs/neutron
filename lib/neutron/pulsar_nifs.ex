@@ -1,4 +1,5 @@
 defmodule Neutron.PulsarNifs do
+  @moduledoc "all the C nifs"
   @on_load :load_nifs
 
   def load_nifs do

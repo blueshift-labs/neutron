@@ -10,7 +10,9 @@ defmodule Neutron.MixProject do
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
+      test_paths: test_paths(Mix.env())
     ]
   end
 
@@ -25,9 +27,9 @@ defmodule Neutron.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:elixir_make, "~> 0.6", runtime: false}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:elixir_make, "~> 0.6", runtime: false},
+      {:divo, "~> 1.1.9", only: [:dev, :integration]},
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -39,4 +41,10 @@ defmodule Neutron.MixProject do
         System.get_env("ERL_EI_LIBDIR") || Path.join([:code.root_dir(), "usr", "lib"])
     }
   end
+
+  defp elixirc_paths(env) when env in [:test, :integration], do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  defp test_paths(:integration), do: ["test/integration"]
+  defp test_paths(_), do: ["test/unit"]
 end

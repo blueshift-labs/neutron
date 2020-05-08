@@ -37,7 +37,6 @@ defmodule Neutron.PulsarAsyncProducer do
   def init(%{topic: topic} = config) do
     Process.flag(:trap_exit, true)
     {:ok, client_ref} = PulsarClient.get_client()
-    # todo expose more producer options
     {:ok, producer_ref} = PulsarNifs.create_async_producer(client_ref, topic, self())
     {:ok, %{config: config, producer_ref: producer_ref}}
   end

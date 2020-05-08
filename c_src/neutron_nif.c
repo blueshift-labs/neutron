@@ -176,6 +176,7 @@ static void listener_callback(pulsar_consumer_t* consumer, pulsar_message_t* mes
     ERL_NIF_TERM p_msg_id_res = enif_make_resource(env, p_msg_id);
     enif_release_resource(p_msg_id);
 
+    // todo inline make_atom since hotpath
     enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, make_atom(env, "listener_callback"), ret_bin, p_msg_id_res));
 
     enif_free_env(env);
@@ -263,7 +264,6 @@ ERL_NIF_TERM do_consume(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     p_consumer->callback_pid = send_back_to_pid;
 
     pulsar_consumer_configuration_t *consumer_conf = pulsar_consumer_configuration_create();
-    // ToDo make below configurable right now it just uses shared subscription
     pulsar_consumer_configuration_set_consumer_type(consumer_conf, consumer_type);
     pulsar_consumer_configuration_set_message_listener(consumer_conf, listener_callback, &p_consumer->callback_pid);
 
