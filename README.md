@@ -14,6 +14,7 @@ def deps do
 end
 ```
 
+### Configure
 In your configs:
 
 ```elixir
@@ -24,7 +25,10 @@ config :neutron,
 
 The above is used for the pulsar client configuration. There is 1 global client that's stored using persistent_term. The thread count is used for the pulsar client IO Threads and Message Listener Threads
 
+
+### Consuming
 How to start a consumer under neutron's supervisor tree:
+
 ```elixir
 defmodule ConsumerCallback do
   @behaviour Neutron.PulsarConsumerCallback
@@ -41,6 +45,7 @@ Neutron.start_consumer([callback_module: ConsumerCallback, consumer_type: :share
 
 See the `start_consumer` documentation for more information. The above shows all the default values being used minus callback_module which defaults to a module which shouldn't exist and is required.
 
+### Producing
 How to do an async produce. Ideally the producer created by the first call should be put under a supervisor tree or threaded through your program. The sync produce API is also available but is also less efficient as a producer is created in the nif per call
 
 ```elixir

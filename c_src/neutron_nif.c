@@ -1,6 +1,6 @@
 #include <erl_nif.h>
 
-#include <pulsar/c/client.h>
+#include "pulsar/c/client.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -36,26 +36,6 @@ static ErlNifResourceType *nif_pulsar_client_type = NULL;
 static ErlNifResourceType *nif_pulsar_consumer_type = NULL;
 static ErlNifResourceType *nif_pulsar_msg_id_type = NULL;
 static ErlNifResourceType *nif_pulsar_producer_type = NULL;
-
-static void
-destruct_pulsar_client(ErlNifEnv *env, void *arg)
-{
-}
-
-static void
-destruct_pulsar_consumer(ErlNifEnv *env, void *arg)
-{
-}
-
-static void
-destruct_pulsar_msg_id(ErlNifEnv *env, void *arg)
-{
-}
-
-static void
-destruct_pulsar_producer(ErlNifEnv *env, void *arg)
-{
-}
 
 static ERL_NIF_TERM
 make_atom(ErlNifEnv *env, const char *atom_name)
@@ -627,16 +607,16 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     ErlNifResourceType *rt_msg_id;
     ErlNifResourceType *rt_producer;
 
-    rt_client = enif_open_resource_type(env, "neutron_nif", "pulsar_client", destruct_pulsar_client, ERL_NIF_RT_CREATE, NULL);
+    rt_client = enif_open_resource_type(env, "neutron_nif", "pulsar_client", NULL, ERL_NIF_RT_CREATE, NULL);
     if (!rt_client) return -1;
 
-    rt_consumer = enif_open_resource_type(env, "neutron_nif", "pulsar_consumer", destruct_pulsar_consumer, ERL_NIF_RT_CREATE, NULL);
+    rt_consumer = enif_open_resource_type(env, "neutron_nif", "pulsar_consumer", NULL, ERL_NIF_RT_CREATE, NULL);
     if (!rt_consumer) return -1;
 
-    rt_msg_id = enif_open_resource_type(env, "neutron_nif", "pulsar_msg_id", destruct_pulsar_msg_id, ERL_NIF_RT_CREATE, NULL);
+    rt_msg_id = enif_open_resource_type(env, "neutron_nif", "pulsar_msg_id", NULL, ERL_NIF_RT_CREATE, NULL);
     if (!rt_msg_id) return -1;
 
-    rt_producer = enif_open_resource_type(env, "neutron_nif", "pulsar_producer", destruct_pulsar_producer, ERL_NIF_RT_CREATE, NULL);
+    rt_producer = enif_open_resource_type(env, "neutron_nif", "pulsar_producer", NULL, ERL_NIF_RT_CREATE, NULL);
     if (!rt_producer) return -1;
 
     nif_pulsar_client_type = rt_client;
@@ -662,10 +642,10 @@ ErlNifFunc nif_funcs[] =
     {"sync_produce", 3, sync_produce, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"make_client", 1, make_client, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"destroy_client", 1, destroy_client, ERL_NIF_DIRTY_JOB_IO_BOUND},
-    {"do_consume", 2, do_consume},
+    {"do_consume", 2, do_consume, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"ack", 2, ack, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"ack_all", 2, ack_all, ERL_NIF_DIRTY_JOB_IO_BOUND},
-    {"nack", 2, nack, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"nack", 2, nack},
     {"destroy_consumer", 1, destroy_consumer, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"create_async_producer", 3, create_async_producer, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"async_produce", 2, async_produce},
