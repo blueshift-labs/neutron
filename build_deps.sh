@@ -2,7 +2,7 @@
 
 #!/usr/bin/env bash
 
-function fail_check
+function fail_check()
 {
     "$@"
     local status=$?
@@ -21,7 +21,7 @@ function DownloadLib()
 
   if [ ! -d "$DESTINATION" ]; then
       fail_check git clone -b $BRANCH $REPO $DESTINATION
-    fi
+  fi
 
   pushd $DESTINATION
   fail_check git checkout $REV
@@ -45,11 +45,11 @@ function BuildLib()
             export CPPFLAGS=-I$OPENSSL_ROOT_DIR/include
             export LDFLAGS=-L$OPENSSL_ROOT_DIR/lib
             ;;
-    esac
+  esac
 
-    cd pulsar-client-cpp
-    fail_check cmake . -DBUILD_TESTS=OFF
-    fail_check make -j$(nproc)
+  cd pulsar-client-cpp
+  fail_check cmake . -DBUILD_TESTS=OFF
+  fail_check make -j$(nproc)
 
   popd
   popd

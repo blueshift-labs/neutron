@@ -4,9 +4,7 @@ defmodule NeutronTest do
   use Divo, services: [:pulsar]
 
   property "sync produce is always successful" do
-    check all(
-            message <- binary()
-          ) do
+    check all(message <- binary()) do
       assert :ok == Neutron.sync_produce("my-topic-produce", message)
     end
   end
@@ -21,6 +19,7 @@ defmodule NeutronTest do
         _msg = send(@compiled_pid, {:test_deliver, res})
       end
     end
+
     message = "hello test deliver"
 
     {:ok, pid} = Neutron.create_async_producer("my-topic-produce", DeliverCallback)
@@ -41,10 +40,11 @@ defmodule NeutronTest do
         :ack
       end
     end
+
     message = "hello test consume"
     topic = "my-topic-consume"
 
-    {:ok, _pid} = Neutron.start_consumer([callback_module: ConsumerCallback, topic: topic])
+    {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerCallback, topic: topic)
     :ok = Neutron.sync_produce(topic, message)
 
     assert_receive {:test_callback, message}

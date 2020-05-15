@@ -9,7 +9,7 @@ defmodule Neutron.PulsarConsumer do
     %{
       id: :"PulsarConsumer-#{:erlang.unique_integer([:monotonic])}",
       start: {Neutron.PulsarConsumer, :start_link, [arg]},
-      shutdown: :infinity,
+      shutdown: :infinity
     }
   end
 

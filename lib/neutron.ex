@@ -37,7 +37,6 @@ defmodule Neutron do
   The last keyword list arguments are topic and subscription binaries ("strings"):
   i.e. [topic: "my-topic", subscription: "my-subscription"].
   The default topic is "my-topic" and the default subscription "my-subscription" fallbacks are included.
-
   """
   @spec start_consumer(Keyword.t()) :: GenServer.on_start()
   def start_consumer(args \\ []) when is_list(args) do

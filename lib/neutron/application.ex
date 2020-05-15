@@ -36,6 +36,6 @@ defmodule Neutron.Application do
   end
 
   def terminate_child(child_pid) do
-    :ok = DynamicSupervisor.terminate_child(@dynamic_supervisor, child_pid)
+    DynamicSupervisor.terminate_child(@dynamic_supervisor, child_pid)
   end
 end
