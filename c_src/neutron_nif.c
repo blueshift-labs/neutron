@@ -534,7 +534,7 @@ ERL_NIF_TERM create_async_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM 
     ERL_NIF_TERM p_producer_res = enif_make_resource(env, p_producer);
     enif_release_resource(p_producer);
 
-    return enif_make_tuple2(env, make_atom(env, "ok"), p_producer_res);
+    return enif_make_tuple2(env, ATOMS.atomOk, p_producer_res);
 }
 
 ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -565,9 +565,18 @@ ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     pulsar_producer_send_async(p_producer->producer, message, delivery_callback, &p_producer->callback_pid);
 
-    pulsar_message_free(message);
+    ErlNifBinary bin;
+    ERL_NIF_TERM ret_bin;
+    pulsar_message_id_t* msg_id = pulsar_message_get_message_id(message);
+    ERL_NIF_TERM temp = enif_make_string(env, pulsar_message_id_str(msg_id), ERL_NIF_LATIN1);
+    enif_inspect_iolist_as_binary(env, temp, &bin);
+    ret_bin = enif_make_binary(env, &bin);
 
-    return ATOMS.atomOk;
+    pulsar_message_free(message);
+    pulsar_message_id_free(msg_id);
+
+
+    return enif_make_tuple2(env, ATOMS.atomOk, ret_bin);
 }
 
 ERL_NIF_TERM destroy_producer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])

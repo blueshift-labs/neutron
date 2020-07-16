@@ -84,8 +84,8 @@ defmodule Neutron do
   Uses the global pulsar client for connection information.
   Will always return :ok
   """
-  @spec async_produce(pid(), String.t()) :: GenServer.cast()
+  @spec async_produce(pid(), String.t()) :: GenServer.call()
   def async_produce(producer_pid, msg) when is_pid(producer_pid) and is_binary(msg) do
-    GenServer.cast(producer_pid, {:async_produce, msg})
+    GenServer.call(producer_pid, {:async_produce, msg})
   end
 end

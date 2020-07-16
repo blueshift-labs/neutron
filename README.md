@@ -9,7 +9,7 @@
 ```elixir
 def deps do
   [
-    {:neutron, git: "https://github.com/IRog/neutron"}
+    {:neutron, github: "IRog/neutron"}
   ]
 end
 ```
@@ -63,7 +63,7 @@ end
 
 # async produce
 {:ok, pid} = Neutron.create_async_producer("my-topic", DeliverCallback)
-:ok = Neutron.async_produce(pid, "hello message")
+{:ok, msg_id} = Neutron.async_produce(pid, "hello message")
 
 # sync produce
 :ok = Neutron.sync_produce("my-topic", "hello message redux")
