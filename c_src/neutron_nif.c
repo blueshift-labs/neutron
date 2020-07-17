@@ -395,6 +395,26 @@ ERL_NIF_TERM destroy_consumer(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
     return ATOMS.atomOk;
 }
 
+void maybe_set_message_options(ErlNifEnv* env, pulsar_message_t *message, ERL_NIF_TERM map)
+{
+    ERL_NIF_TERM deliver_after_ms_atm = make_atom(env, "deliver_after_ms");
+    ERL_NIF_TERM deliver_at_ms_atm = make_atom(env, "deliver_at_ms");
+
+    uint64_t deliver_after_ms;
+    ERL_NIF_TERM deliver_after_ms_term;
+    if (enif_get_map_value(env, map, deliver_after_ms_atm, &deliver_after_ms_term) && enif_get_uint64(env, deliver_after_ms_term, &deliver_after_ms))
+    {
+        pulsar_message_set_deliver_after(message, deliver_after_ms);
+    }
+
+    uint64_t deliver_at_ms;
+    ERL_NIF_TERM deliver_at_ms_term;
+    if (enif_get_map_value(env, map, deliver_at_ms_atm, &deliver_at_ms_term) && enif_get_uint64(env, deliver_at_ms_term, &deliver_at_ms))
+    {
+        pulsar_message_set_deliver_at(message, deliver_at_ms);
+    }
+}
+
 ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     pulsar_client *p_client;
@@ -443,6 +463,7 @@ ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     pulsar_message_t* message = pulsar_message_create();
     pulsar_message_set_content(message, msg_str, strlen(msg_str));
+    maybe_set_message_options(env, message, argv[3]);
 
     err = pulsar_producer_send(producer, message);
 
@@ -562,6 +583,7 @@ ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     pulsar_message_t* message = pulsar_message_create();
     pulsar_message_set_content(message, msg_str, strlen(msg_str));
+    maybe_set_message_options(env, message, argv[2]);
 
     pulsar_producer_send_async(p_producer->producer, message, delivery_callback, &p_producer->callback_pid);
 
@@ -574,7 +596,6 @@ ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
     pulsar_message_free(message);
     pulsar_message_id_free(msg_id);
-
 
     return enif_make_tuple2(env, ATOMS.atomOk, ret_bin);
 }
@@ -648,7 +669,7 @@ static int on_upgrade(ErlNifEnv* env, void** priv, void** old_priv_data, ERL_NIF
 
 ErlNifFunc nif_funcs[] =
 {
-    {"sync_produce", 3, sync_produce, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"sync_produce", 4, sync_produce, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"make_client", 1, make_client, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"destroy_client", 1, destroy_client, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"do_consume", 2, do_consume, ERL_NIF_DIRTY_JOB_IO_BOUND},
@@ -657,7 +678,7 @@ ErlNifFunc nif_funcs[] =
     {"nack", 2, nack},
     {"destroy_consumer", 1, destroy_consumer, ERL_NIF_DIRTY_JOB_IO_BOUND},
     {"create_async_producer", 3, create_async_producer, ERL_NIF_DIRTY_JOB_IO_BOUND},
-    {"async_produce", 2, async_produce},
+    {"async_produce", 3, async_produce},
     {"destroy_producer", 1, destroy_producer, ERL_NIF_DIRTY_JOB_IO_BOUND},
 };
 

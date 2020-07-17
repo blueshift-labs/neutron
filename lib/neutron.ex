@@ -45,14 +45,16 @@ defmodule Neutron do
   end
 
   @doc """
-  Does a synchronous produce to given topic binary with given message binary.
+  Does a synchronous produce to given topic binary with given message binary and optional produce_opts.
+  produce_opts: the keys are :deliver_after_ms and :deliver_at_ms both take an int as the value for :deliver_at_ms the int is a unix timestamp in milliseconds for :deliver_after_ms it's the delay to send the message after in milliseconds.
   Will bootstrap a pulsar producer for each call so async produce where you re-use the producer is more efficient.
   Uses the global pulsar client for connection information.
   """
-  @spec sync_produce(String.t(), String.t()) :: :ok | {:error, String.t()}
-  def sync_produce(topic, message) when is_binary(topic) and is_binary(message) do
+  @spec sync_produce(String.t(), String.t(), map()) :: :ok | {:error, String.t()}
+  def sync_produce(topic, message, produce_opts \\ %{})
+      when is_binary(topic) and is_binary(message) and is_map(produce_opts) do
     {:ok, client_ref} = PulsarClient.get_client()
-    PulsarNifs.sync_produce(client_ref, topic, message)
+    PulsarNifs.sync_produce(client_ref, topic, message, produce_opts)
   end
 
   @doc """
@@ -80,12 +82,14 @@ defmodule Neutron do
   end
 
   @doc """
-  Does a asynchronous produce using the given producer pid generated from create_async_producer and given message binary.
+  Does a asynchronous produce using the given producer pid generated from create_async_producer, given message binary and optional produce_opts.
+  produce_opts: the keys are :deliver_after_ms and :deliver_at_ms both take an int as the value for :deliver_at_ms the int is a unix timestamp in milliseconds for :deliver_after_ms it's the delay to send the message after in milliseconds
   Uses the global pulsar client for connection information.
-  Will always return :ok
+  Will return {:ok, msg_id} where msg_id is a String.t() serialized messageId on sucess or an {:error, String.t()} on failure
   """
-  @spec async_produce(pid(), String.t()) :: GenServer.call()
-  def async_produce(producer_pid, msg) when is_pid(producer_pid) and is_binary(msg) do
-    GenServer.call(producer_pid, {:async_produce, msg})
+  @spec async_produce(pid(), String.t(), map()) :: GenServer.call()
+  def async_produce(producer_pid, msg, produce_opts \\ %{})
+      when is_pid(producer_pid) and is_binary(msg) and is_map(produce_opts) do
+    GenServer.call(producer_pid, {:async_produce, msg, produce_opts})
   end
 end

@@ -57,8 +57,12 @@ defmodule Neutron.PulsarAsyncProducer do
   end
 
   @impl true
-  def handle_call({:async_produce, msg}, _from, %{producer_ref: producer_ref} = state) do
-    res = PulsarNifs.async_produce(producer_ref, msg)
+  def handle_call(
+        {:async_produce, msg, produce_opts},
+        _from,
+        %{producer_ref: producer_ref} = state
+      ) do
+    res = PulsarNifs.async_produce(producer_ref, msg, produce_opts)
 
     {:reply, res, state}
   end
