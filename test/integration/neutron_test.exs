@@ -22,10 +22,10 @@ defmodule NeutronTest do
 
     message = "hello test deliver"
 
-    {:ok, pid} = Neutron.create_async_producer("my-topic-produce", DeliverCallback)
-    {:ok, msg_id} = Neutron.async_produce(pid, message)
+    {:ok, pid} = Neutron.create_async_producer("my-topic-async-produce", DeliverCallback)
+    :ok = Neutron.async_produce(pid, message)
 
-    assert_receive {:test_deliver, {:ok, ^msg_id}}
+    assert_receive {:test_deliver, {:ok, new_msg_id}}
   end
 
   test "sync produce and consume roundtrip" do
@@ -51,7 +51,7 @@ defmodule NeutronTest do
   end
 
   test "sync produce delay_after and consume roundtrip" do
-    defmodule ConsumerCallback do
+    defmodule ConsumerDelayAfterCallback do
       @behaviour Neutron.PulsarConsumerCallback
       @delay_ms 2_000
 
@@ -69,15 +69,15 @@ defmodule NeutronTest do
     end
 
     message = "#{DateTime.to_unix(DateTime.utc_now(), :millisecond)}"
-    topic = "my-topic-consume"
+    topic = "my-topic-delay-after-consume"
 
-    {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerCallback, topic: topic)
-    :ok = Neutron.sync_produce(topic, message, %{deliver_after_ms: ConsumerCallback.delay()})
+    {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerDelayAfterCallback, topic: topic)
+    :ok = Neutron.sync_produce(topic, message, %{deliver_after_ms: ConsumerDelayAfterCallback.delay()})
     Process.sleep(2_005)
   end
 
   test "sync produce delay_at and consume roundtrip" do
-    defmodule ConsumerCallback do
+    defmodule ConsumerDelayAtCallback do
       @behaviour Neutron.PulsarConsumerCallback
       @delay_ms 2_000
 
@@ -94,12 +94,12 @@ defmodule NeutronTest do
       end
     end
 
-    topic = "my-topic-consume"
-    {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerCallback, topic: topic)
+    topic = "my-topic-delay-at-consume"
+    {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerDelayAtCallback, topic: topic)
 
     current_time_unix_ms = DateTime.to_unix(DateTime.utc_now(), :millisecond)
     message = "#{current_time_unix_ms}"
-    unix_time_to_send_ms = current_time_unix_ms + ConsumerCallback.delay()
+    unix_time_to_send_ms = current_time_unix_ms + ConsumerDelayAtCallback.delay()
     :ok = Neutron.sync_produce(topic, message, %{deliver_at_ms: unix_time_to_send_ms})
     Process.sleep(2_005)
   end

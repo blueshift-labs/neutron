@@ -56,7 +56,8 @@ defmodule Neutron.PulsarConsumer do
       ) do
     res =
       try do
-        callback_module.handle_message(msg)
+        # todo investigate the bug that sometimes causes a trailing bell character from C library with pulsar
+        callback_module.handle_message(String.trim_trailing(msg, "\a"))
       catch
         _any -> {:error, :exception}
       end

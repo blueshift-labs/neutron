@@ -1,6 +1,6 @@
 # Neutron
 
-- A simple apache pulsar client using their C API and nifs.
+- A simple apache pulsar client using their C API (2.6.0) and nifs.
 - The persistent_term API is being used so this requires OTP 21+ hence elixir 1.10+.
 - Caution `ack_all` doesn't work as expected with `shared` subscription.
 
@@ -63,7 +63,7 @@ end
 
 # async produce
 {:ok, pid} = Neutron.create_async_producer("my-topic", DeliverCallback)
-{:ok, msg_id} = Neutron.async_produce(pid, "hello message")
+:ok = Neutron.async_produce(pid, "hello message")
 
 # sync produce
 :ok = Neutron.sync_produce("my-topic", "hello message redux")

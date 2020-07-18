@@ -85,7 +85,7 @@ defmodule Neutron do
   Does a asynchronous produce using the given producer pid generated from create_async_producer, given message binary and optional produce_opts.
   produce_opts: the keys are :deliver_after_ms and :deliver_at_ms both take an int as the value for :deliver_at_ms the int is a unix timestamp in milliseconds for :deliver_after_ms it's the delay to send the message after in milliseconds
   Uses the global pulsar client for connection information.
-  Will return {:ok, msg_id} where msg_id is a String.t() serialized messageId on sucess or an {:error, String.t()} on failure
+  Will return :ok on sucess or an {:error, String.t()} on failure
   """
   @spec async_produce(pid(), String.t(), map()) :: GenServer.call()
   def async_produce(producer_pid, msg, produce_opts \\ %{})

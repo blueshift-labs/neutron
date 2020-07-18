@@ -64,8 +64,8 @@ if [ -f "$DEPS_LOCATION/$DESTINATION/pulsar-client-cpp/lib/libpulsar.a" ]; then
 fi
 
 REPO=https://github.com/apache/pulsar
-BRANCH=v2.5.0
-REV=f2afad353795f70c00910b6dcce5df8c62b94a67
+BRANCH=v2.6.0
+REV=653ef409e5a3e72d7a7917d45b54c46e7bff5c16
 
 DownloadLib
 BuildLib
