@@ -46,7 +46,7 @@ Neutron.start_consumer([callback_module: ConsumerCallback, consumer_type: :share
 See the `start_consumer` documentation for more information. The above shows all the default values being used minus callback_module which defaults to a module which shouldn't exist and is required.
 
 ### Producing
-How to do an async produce. Ideally the producer created by the first call should be put under a supervisor tree or threaded through your program. The sync produce API is also available but is also less efficient as a producer is created in the nif per call
+How to do an async produce. Ideally the producer created by the first call should be put under a supervisor tree or threaded through your program. Use create_managed_async_producer and genserver call by name or tuple if you want to do otherwise. The sync produce API is also available but is also less efficient as a producer is created in the nif per call
 
 ```elixir
 defmodule DeliverCallback do

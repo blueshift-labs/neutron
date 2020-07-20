@@ -71,8 +71,12 @@ defmodule NeutronTest do
     message = "#{DateTime.to_unix(DateTime.utc_now(), :millisecond)}"
     topic = "my-topic-delay-after-consume"
 
-    {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerDelayAfterCallback, topic: topic)
-    :ok = Neutron.sync_produce(topic, message, %{deliver_after_ms: ConsumerDelayAfterCallback.delay()})
+    {:ok, _pid} =
+      Neutron.start_consumer(callback_module: ConsumerDelayAfterCallback, topic: topic)
+
+    :ok =
+      Neutron.sync_produce(topic, message, %{deliver_after_ms: ConsumerDelayAfterCallback.delay()})
+
     Process.sleep(2_005)
   end
 

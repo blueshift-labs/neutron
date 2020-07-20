@@ -75,10 +75,28 @@ defmodule Neutron do
   int32 partition
   int32 batchIndex
   """
-  @spec create_async_producer(String.t(), atom()) :: GenServer.on_start()
-  def create_async_producer(topic, callback_module)
-      when is_binary(topic) and is_atom(callback_module) do
-    PulsarAsyncProducer.start_link(topic: topic, callback_module: callback_module)
+  @spec create_async_producer(String.t(), atom(), GenServer.options()) :: GenServer.on_start()
+  def create_async_producer(topic, callback_module, genserver_opts \\ [])
+      when is_binary(topic) and is_atom(callback_module) and is_list(genserver_opts) do
+    PulsarAsyncProducer.start_link(
+      [topic: topic, callback_module: callback_module],
+      genserver_opts
+    )
+  end
+
+  @doc "Same args and options as `create_async_producer` but
+    starts the async producer under the neutron supervisor tree with a dynamic supervisor."
+  @spec create_managed_async_producer(String.t(), atom(), GenServer.options()) ::
+          GenServer.on_start()
+  def create_managed_async_producer(topic, callback_module, genserver_opts \\ [])
+      when is_binary(topic) and is_atom(callback_module) and is_list(genserver_opts) do
+    child_spec =
+      PulsarAsyncProducer.child_spec([
+        [topic: topic, callback_module: callback_module],
+        genserver_opts
+      ])
+
+    Neutron.Application.start_child(child_spec)
   end
 
   @doc """
@@ -87,9 +105,10 @@ defmodule Neutron do
   Uses the global pulsar client for connection information.
   Will return :ok on sucess or an {:error, String.t()} on failure
   """
-  @spec async_produce(pid(), String.t(), map()) :: GenServer.call()
-  def async_produce(producer_pid, msg, produce_opts \\ %{})
-      when is_pid(producer_pid) and is_binary(msg) and is_map(produce_opts) do
-    GenServer.call(producer_pid, {:async_produce, msg, produce_opts})
+  @spec async_produce(Genserver.server(), String.t(), map()) :: GenServer.call()
+  def async_produce(producer_lookup, msg, produce_opts \\ %{})
+      when is_pid(producer_lookup) or is_atom(producer_lookup) or
+             (is_tuple(producer_lookup) and is_binary(msg) and is_map(produce_opts)) do
+    GenServer.call(producer_lookup, {:async_produce, msg, produce_opts})
   end
 end

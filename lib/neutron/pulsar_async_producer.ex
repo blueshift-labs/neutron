@@ -5,15 +5,15 @@ defmodule Neutron.PulsarAsyncProducer do
 
   alias Neutron.{PulsarClient, PulsarNifs}
 
-  def child_spec(arg \\ []) do
+  def child_spec([arg, genserver_opts] \\ []) do
     %{
       id: :"PulsarAsyncProducer-#{:erlang.unique_integer([:monotonic])}",
-      start: {Neutron.PulsarAsyncProducer, :start_link, [arg]},
+      start: {Neutron.PulsarAsyncProducer, :start_link, [arg, genserver_opts]},
       shutdown: :infinity
     }
   end
 
-  def start_link(arg) do
+  def start_link(arg, genServer_opts) do
     callback_module = Keyword.get(arg, :callback_module, Test)
 
     behaviours =
@@ -28,10 +28,14 @@ defmodule Neutron.PulsarAsyncProducer do
 
     topic = Keyword.get(arg, :topic, "my-topic")
 
-    GenServer.start_link(__MODULE__, %{
-      topic: topic,
-      callback_module: callback_module
-    })
+    GenServer.start_link(
+      __MODULE__,
+      %{
+        topic: topic,
+        callback_module: callback_module
+      },
+      genServer_opts
+    )
   end
 
   @impl true
