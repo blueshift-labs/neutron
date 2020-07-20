@@ -55,8 +55,8 @@ defmodule DeliverCallback do
   @impl true
   def handle_delivery(res) do
     case res do
-      {:ok, _msg_id_string} -> IO.inspect "successful produce"
-      {:error, _msg_id_string} -> IO.inspect "failed produce"
+      {:ok, _msg_id_string, msg} -> IO.inspect "successful produce"
+      {:error, _msg_id_string, msg} -> IO.inspect "failed produce"
     end
   end
 end

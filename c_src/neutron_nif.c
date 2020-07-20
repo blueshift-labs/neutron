@@ -32,10 +32,16 @@ typedef struct {
     ErlNifPid callback_pid;
 } pulsar_producer;
 
+typedef struct {
+    const char* msg_data;
+    ErlNifPid callback_pid;
+} delivery_callback_ctx;
+
 static ErlNifResourceType *nif_pulsar_client_type = NULL;
 static ErlNifResourceType *nif_pulsar_consumer_type = NULL;
 static ErlNifResourceType *nif_pulsar_msg_id_type = NULL;
 static ErlNifResourceType *nif_pulsar_producer_type = NULL;
+static ErlNifResourceType *nif_delivery_callback_ctx_type = NULL;
 
 static ERL_NIF_TERM
 make_atom(ErlNifEnv *env, const char *atom_name)
@@ -481,20 +487,26 @@ ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 }
 
 static void delivery_callback(pulsar_result result, pulsar_message_id_t* msg_id, void* ctx) {
-    ErlNifPid actual_pid = *(ErlNifPid *)ctx;
-    ErlNifBinary bin;
-    ERL_NIF_TERM ret_bin;
+    delivery_callback_ctx deliv_cb_ctx = *(delivery_callback_ctx *)ctx;
+    const char* msg = deliv_cb_ctx.msg_data;
+    ErlNifPid actual_pid = deliv_cb_ctx.callback_pid;
+    ErlNifBinary bin, temp_bin;
+    ERL_NIF_TERM ret_bin, msg_bin;
     ErlNifEnv* env = enif_alloc_env();
     ERL_NIF_TERM temp = enif_make_string(env, pulsar_message_id_str(msg_id), ERL_NIF_LATIN1);
+    ERL_NIF_TERM temp_msg = enif_make_string(env, msg, ERL_NIF_LATIN1);
     enif_inspect_iolist_as_binary(env, temp, &bin);
+    enif_inspect_iolist_as_binary(env, temp_msg, &temp_bin);
     ret_bin = enif_make_binary(env, &bin);
+    msg_bin = enif_make_binary(env, &temp_bin);
 
     if (result == pulsar_result_Ok) {
-        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, ATOMS.atomDelivery, ATOMS.atomOk, ret_bin));
+        enif_send(NULL, &actual_pid, env, enif_make_tuple4(env, ATOMS.atomDelivery, ATOMS.atomOk, ret_bin, msg_bin));
     } else {
-        enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, ATOMS.atomDelivery, ATOMS.atomError, ret_bin));
+        enif_send(NULL, &actual_pid, env, enif_make_tuple4(env, ATOMS.atomDelivery, ATOMS.atomError, ret_bin, msg_bin));
     }
 
+    enif_release_resource(ctx);
     pulsar_message_id_free(msg_id);
     enif_free_env(env);
 }
@@ -585,7 +597,17 @@ ERL_NIF_TERM async_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_message_set_content(message, msg_str, strlen(msg_str));
     maybe_set_message_options(env, message, argv[2]);
 
-    pulsar_producer_send_async(p_producer->producer, message, delivery_callback, &p_producer->callback_pid);
+    delivery_callback_ctx *delivery_cb_ctx;
+    delivery_cb_ctx = enif_alloc_resource(nif_delivery_callback_ctx_type, sizeof(delivery_callback_ctx));
+    if (!delivery_cb_ctx)
+    {
+        return make_error_tuple(env, "no_memory for creating delivery callback context");
+    }
+
+    delivery_cb_ctx->callback_pid = p_producer->callback_pid;
+    delivery_cb_ctx->msg_data = msg_str;
+
+    pulsar_producer_send_async(p_producer->producer, message, delivery_callback, delivery_cb_ctx);
 
     pulsar_message_free(message);
 
@@ -628,6 +650,7 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     ErlNifResourceType *rt_consumer;
     ErlNifResourceType *rt_msg_id;
     ErlNifResourceType *rt_producer;
+    ErlNifResourceType *rt_delivery_cb_ctx;
 
     rt_client = enif_open_resource_type(env, "neutron_nif", "pulsar_client", NULL, ERL_NIF_RT_CREATE, NULL);
     if (!rt_client) return -1;
@@ -641,10 +664,14 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     rt_producer = enif_open_resource_type(env, "neutron_nif", "pulsar_producer", NULL, ERL_NIF_RT_CREATE, NULL);
     if (!rt_producer) return -1;
 
+    rt_delivery_cb_ctx = enif_open_resource_type(env, "neutron_nif", "delivery_callback_ctx", NULL, ERL_NIF_RT_CREATE, NULL);
+    if (!rt_delivery_cb_ctx) return -1;
+
     nif_pulsar_client_type = rt_client;
     nif_pulsar_consumer_type = rt_consumer;
     nif_pulsar_msg_id_type = rt_msg_id;
     nif_pulsar_producer_type = rt_producer;
+    nif_delivery_callback_ctx_type = rt_delivery_cb_ctx;
 
     return 0;
 }

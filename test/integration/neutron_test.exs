@@ -25,7 +25,7 @@ defmodule NeutronTest do
     {:ok, pid} = Neutron.create_async_producer("my-topic-async-produce", DeliverCallback)
     :ok = Neutron.async_produce(pid, message)
 
-    assert_receive {:test_deliver, {:ok, new_msg_id}}
+    assert_receive {:test_deliver, {:ok, new_msg_id, ^message}}
   end
 
   test "sync produce and consume roundtrip" do

@@ -48,11 +48,11 @@ defmodule Neutron.PulsarAsyncProducer do
 
   @impl true
   def handle_info(
-        {:delivery_callback, result, msg_id},
+        {:delivery_callback, result, msg_id, msg},
         %{config: %{callback_module: callback_module}} = state
       ) do
     try do
-      callback_module.handle_delivery({result, msg_id})
+      callback_module.handle_delivery({result, msg_id, msg})
     catch
       _any -> {:error, :exception}
     end

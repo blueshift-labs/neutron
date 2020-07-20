@@ -23,7 +23,7 @@ priv:
 	mkdir -p priv
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
+	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
 
 clean:
 	$(RM) priv/neutron_nif.so
