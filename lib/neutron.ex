@@ -38,7 +38,7 @@ defmodule Neutron do
   i.e. [topic: "my-topic", subscription: "my-subscription"].
   The default topic is "my-topic" and the default subscription "my-subscription" fallbacks are included.
   """
-  @spec start_consumer(Keyword.t()) :: GenServer.on_start()
+  @spec start_consumer(Keyword.t()) :: DynamicSupervisor.on_start_child()
   def start_consumer(args \\ []) when is_list(args) do
     # in the C/C++ code the default is exclusive this defaults to shared subscription
     Neutron.Application.start_child(PulsarConsumer.child_spec(args))
@@ -87,7 +87,7 @@ defmodule Neutron do
   @doc "Same args and options as `create_async_producer` but
     starts the async producer under the neutron supervisor tree with a dynamic supervisor."
   @spec create_managed_async_producer(String.t(), atom(), GenServer.options()) ::
-          GenServer.on_start()
+          DynamicSupervisor.on_start_child()
   def create_managed_async_producer(topic, callback_module, genserver_opts \\ [])
       when is_binary(topic) and is_atom(callback_module) and is_list(genserver_opts) do
     child_spec =
