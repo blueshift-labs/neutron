@@ -2,8 +2,6 @@
 
 # mostly taken from https://github.com/silviucpp/erlkaf/blob/master/build_deps.sh
 
-SHELL = /bin/bash
-
 function fail_check()
 {
     "$@"
