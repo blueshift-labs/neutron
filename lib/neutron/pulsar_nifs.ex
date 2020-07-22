@@ -3,7 +3,17 @@ defmodule Neutron.PulsarNifs do
   @on_load :load_nifs
 
   def load_nifs do
-    :erlang.load_nif(to_charlist("#{:code.priv_dir(:neutron)}/neutron_nif"), 0)
+    directory =
+      case :code.priv_dir(:neutron) do
+        {:error, :bad_name} ->
+          ebin = :filename.dirname(:code.which(__MODULE__))
+          :filename.join([:filename.dirname(ebin), "priv", "neutron_nif"])
+
+        dir ->
+          :filename.join(dir, "neutron_nif")
+      end
+
+    :erlang.load_nif(directory, 0)
   end
 
   def sync_produce(client_ref, topic, message, produce_opts) do
