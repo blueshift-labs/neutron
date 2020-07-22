@@ -10,7 +10,7 @@ else
 ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR)
 endif
 
-CPP_PATH=./deps/pulsar/pulsar-client-cpp
+CPP_PATH=deps/pulsar/pulsar-client-cpp
 
 default_target: all
 
