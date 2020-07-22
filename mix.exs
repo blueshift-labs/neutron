@@ -41,7 +41,9 @@ defmodule Neutron.MixProject do
       "ERL_EI_LIBDIR" =>
         System.get_env("ERL_EI_LIBDIR") || Path.join([:code.root_dir(), "usr", "lib"]),
       "PULSAR_CLIENT_DIR" =>
-        Mix.Project.deps_path <> "/pulsar/pulsar-client-cpp"
+        Mix.Project.deps_path() <> "/pulsar/pulsar-client-cpp",
+      "PRIV_DIR" =>
+        String.replace_trailing(Mix.Project.deps_path(), "deps", "priv") <> "/neutron_nif.so"
     }
   end
 
