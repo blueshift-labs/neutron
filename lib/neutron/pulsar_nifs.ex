@@ -3,7 +3,7 @@ defmodule Neutron.PulsarNifs do
   @on_load :load_nifs
 
   def load_nifs do
-    :erlang.load_nif('./priv/neutron_nif', 0)
+    :erlang.load_nif(to_charlist("#{:code.priv_dir(:neutron)}/neutron_nif"), 0)
   end
 
   def sync_produce(client_ref, topic, message, produce_opts) do
