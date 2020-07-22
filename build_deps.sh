@@ -1,6 +1,8 @@
+#!/usr/bin/env bash
+
 # mostly taken from https://github.com/silviucpp/erlkaf/blob/master/build_deps.sh
 
-#!/usr/bin/env bash
+SHELL = /bin/bash
 
 function fail_check()
 {
