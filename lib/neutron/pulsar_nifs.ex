@@ -4,7 +4,7 @@ defmodule Neutron.PulsarNifs do
 
   def load_nifs do
     IO.inspect("--------load_nif----------------")
-    IO.inspect(System.cmd("ls /app/deps/neutron/priv", []))
+    IO.inspect(System.cmd("ls #{Mix.Project.deps_path}", []))
     IO.inspect(System.cmd("ls #{Application.app_dir(:neutron, "priv/neutron_nif")}", []))
     IO.inspect(Application.app_dir(:neutron, "priv/neutron_nif"))
     IO.inspect("--------load_nif----------------")
