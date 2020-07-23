@@ -28,7 +28,9 @@ priv:
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
 	ls /app/deps/neutron/deps/pulsar/pulsar-client-cpp
-	ls usr/local/lib/erlang/usr/lib
+	ls $(PULSAR_CLIENT_DIR)/lib
+	ls $(PULSAR_CLIENT_DIR)/include
+	ls /usr/local/lib/erlang/usr/lib
 
 	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -L$(PULSAR_CLIENT_DIR)/lib -lpulsar -I$(PULSAR_CLIENT_DIR)/include -o $(PRIV_DIR)
 
