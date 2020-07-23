@@ -9,12 +9,8 @@ $(warning ERL_EI_LIBDIR not set. Invoke via mix)
 else
 ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR)
 endif
-ifeq ($(PULSAR_CLIENT_DIR),)
-$(warning PULSAR_CLIENT_DIR not set. Invoke via mix)
-endif
-ifeq ($(PRIV_DIR),)
-$(warning PRIV_DIR not set. Invoke via mix)
-endif
+
+CPP_PATH=./deps/pulsar/pulsar-client-cpp
 
 default_target: all
 
@@ -27,12 +23,7 @@ priv:
 	mkdir -p priv
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	ls /app/deps/neutron/deps/pulsar/pulsar-client-cpp
-	ls $(PULSAR_CLIENT_DIR)/lib
-	ls $(PULSAR_CLIENT_DIR)/include
-	ls /usr/local/lib/erlang/usr/lib
-
-	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -L$(PULSAR_CLIENT_DIR)/lib -lpulsar -I$(PULSAR_CLIENT_DIR)/include -o $(PRIV_DIR)
+	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
 
 clean:
 	$(RM) priv/neutron_nif.so
