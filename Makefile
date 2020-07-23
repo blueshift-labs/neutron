@@ -12,6 +12,9 @@ endif
 ifeq ($(MIX_APP_PATH),)
 $(warning MIX_APP_PATH not set. Invoke via mix)
 endif
+ifeq ($(MIX_DEPS_PATH),)
+$(warning MIX_APP_PATH not set. Invoke via mix)
+endif
 
 ifeq ($(shell uname),Darwin)     # Mac OS X
 PLATFORM_OPTIONS=-undefined dynamic_lookup
@@ -19,7 +22,7 @@ else
 PLATFORM_OPTIONS=-Wl,-soneutron_nif $(CPP_PATH)/lib/libpulsar.so
 endif
 
-CPP_PATH=./deps/pulsar/pulsar-client-cpp
+CPP_PATH=$(MIX_DEPS_PATH)/pulsar/pulsar-client-cpp
 
 default_target: all
 
