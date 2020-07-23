@@ -3,14 +3,20 @@ defmodule Neutron.PulsarNifs do
   @on_load :load_nifs
 
   def load_nifs do
+    directory = case :code.priv_dir(:neutron) do
+      {:error, :bad_name} ->
+        ebin = :filename.dirname(:code.which(__MODULE__))
+        :filename.join([:filename.dirname(ebin), "priv", "neutron_nif"])
+
+      dir ->
+        :filename.join(dir, "neutron_nif")
+    end
+
     IO.inspect("--------load_nif----------------")
     IO.inspect(System.cmd("pwd", []))
-    IO.inspect(System.cmd("ls #{Mix.Project.deps_path}", []))
-    IO.inspect(System.cmd("ls #{Application.app_dir(:neutron, "priv/neutron_nif")}", []))
-    IO.inspect(Application.app_dir(:neutron, "priv/neutron_nif"))
     IO.inspect("--------load_nif----------------")
 
-    :erlang.load_nif(Application.app_dir(:neutron, "priv/neutron_nif"), 0)
+    :erlang.load_nif(directory, 0)
   end
 
   def sync_produce(client_ref, topic, message, produce_opts) do
