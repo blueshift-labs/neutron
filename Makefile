@@ -16,6 +16,9 @@ else
 PLATFORM_OPTIONS=-Wl,-soneutron_nif $(CPP_PATH)/lib/libpulsar.so
 endif
 
+CURDIR := $(shell pwd)
+BASEDIR := $(abspath $(CURDIR)/..)
+
 CPP_PATH=./deps/pulsar/pulsar-client-cpp
 
 default_target: all
@@ -26,13 +29,13 @@ get_deps:
 all: get_deps priv priv/neutron_nif.so
 
 priv:
-	mkdir -p priv
+	mkdir -p $(BASEDIR)/priv/
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	  $(CC) $^ -shared $(PLATFORM_OPTIONS) -fPIC -O2 -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
+	  $(CC) $^ -shared $(PLATFORM_OPTIONS) -fPIC -O3 -finline-functions -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $(CURDIR)/../priv/neutron_nif.so
 
 
 clean:
-	$(RM) priv/neutron_nif.so
+	$(RM) $(BASEDIR)/priv/neutron_nif.so
 
 .PHONY: default_target get_deps all clean

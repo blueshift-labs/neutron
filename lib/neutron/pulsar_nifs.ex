@@ -14,6 +14,7 @@ defmodule Neutron.PulsarNifs do
 
     IO.inspect("--------load_nif----------------")
     IO.inspect(System.cmd("pwd", []))
+    IO.inspect(directory)
     IO.inspect("--------load_nif----------------")
 
     :erlang.load_nif(directory, 0)
