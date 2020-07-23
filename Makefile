@@ -13,7 +13,7 @@ endif
 ifeq ($(shell uname),Darwin)     # Mac OS X
 PLATFORM_OPTIONS=-undefined dynamic_lookup
 else
-PLATFORM_OPTIONS=-Wl,--allow-shlib-undefined
+PLATFORM_OPTIONS=-Wl,--warn-unresolved-symbols
 endif
 
 CPP_PATH=./deps/pulsar/pulsar-client-cpp
