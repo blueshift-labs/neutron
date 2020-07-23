@@ -38,6 +38,11 @@ defmodule Neutron.MixProject do
     ebin = :filename.dirname(:code.which(__MODULE__))
     priv_dir = to_string(:filename.join([:filename.dirname(ebin), "priv", "neutron_nif"]))
 
+    IO.inspect(priv_dir)
+    IO.inspect(System.cmd("ls", []))
+    IO.inspect(System.cmd("pwd", []))
+    IO.inspect("-----------------------------")
+
     %{
       "ERL_EI_INCLUDE_DIR" =>
         System.get_env("ERL_EI_INCLUDE_DIR") ||
