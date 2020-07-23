@@ -4,21 +4,10 @@ defmodule Neutron.PulsarNifs do
 
   def load_nifs do
     directory = IO.inspect("--------load_nif----------------")
-    IO.inspect(System.cmd("ls", []))
-    IO.inspect(System.cmd("pwd", []))
-    IO.inspect(:code.priv_dir(:neutron))
+    IO.inspect(Application.app_dir(:neutron, "priv/neutron_nif"))
     IO.inspect("--------load_nif----------------")
 
-    case :code.priv_dir(:neutron) do
-      {:error, :bad_name} ->
-        ebin = :filename.dirname(:code.which(__MODULE__))
-        :filename.join([:filename.dirname(ebin), "priv", "neutron_nif"])
-
-      dir ->
-        :filename.join(dir, "neutron_nif")
-    end
-
-    :erlang.load_nif(directory, 0)
+    :erlang.load_nif(Application.app_dir(:neutron, "priv/neutron_nif"), 0)
   end
 
   def sync_produce(client_ref, topic, message, produce_opts) do

@@ -35,10 +35,6 @@ defmodule Neutron.MixProject do
   end
 
   defp make_env do
-    ebin = :filename.dirname(:code.which(__MODULE__))
-    priv_dir = to_string(:filename.join([:filename.dirname(ebin), "priv", "neutron_nif"]))
-
-    IO.inspect(priv_dir)
     IO.inspect(System.cmd("ls", []))
     IO.inspect(System.cmd("pwd", []))
     IO.inspect("-----------------------------")
@@ -49,8 +45,7 @@ defmodule Neutron.MixProject do
           "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/include",
       "ERL_EI_LIBDIR" =>
         System.get_env("ERL_EI_LIBDIR") ||
-          "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/lib",
-      "PRIV_DIR" => priv_dir
+          "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/lib"
     }
   end
 
