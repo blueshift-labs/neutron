@@ -12,6 +12,8 @@ endif
 
 ifeq ($(shell uname),Darwin)     # Mac OS X
 MAYBE_DYNAMIC_LOOKUP=-undefined dynamic_lookup
+else
+MAYBE_DYNAMIC_LOOKUP=-shared
 endif
 
 CPP_PATH=./deps/pulsar/pulsar-client-cpp
