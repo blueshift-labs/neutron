@@ -35,11 +35,17 @@ defmodule Neutron.MixProject do
   end
 
   defp make_env do
+    ebin = :filename.dirname(:code.which(__MODULE__))
+    priv_dir = to_string(:filename.join([:filename.dirname(ebin), "priv", "neutron_nif"]))
+
     %{
       "ERL_EI_INCLUDE_DIR" =>
-        System.get_env("ERL_EI_INCLUDE_DIR") || "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/include",
+        System.get_env("ERL_EI_INCLUDE_DIR") ||
+          "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/include",
       "ERL_EI_LIBDIR" =>
-        System.get_env("ERL_EI_LIBDIR") || "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/lib"
+        System.get_env("ERL_EI_LIBDIR") ||
+          "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/lib",
+      "PRIV_DIR" => priv_dir
     }
   end
 
