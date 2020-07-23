@@ -1,18 +1,19 @@
-# Changed some flags to the compiler to get it to work though
-ifeq ($(ERL_EI_INCLUDE_DIR),)
-$(warning ERL_EI_INCLUDE_DIR not set. Invoke via mix)
+ifeq ($(ERTS_INCLUDE_DIR),)
+$(warning ERTS_INCLUDE_DIR not set. Invoke via mix)
 else
-ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR)
+ERTS_CFLAGS ?= -I$(ERTS_INCLUDE_DIR)
 endif
-ifeq ($(ERL_EI_LIBDIR),)
-$(warning ERL_EI_LIBDIR not set. Invoke via mix)
+ifeq ($(ERL_INTERFACE_INCLUDE_DIR),)
+$(warning ERL_INTERFACE_INCLUDE_DIR not set. Invoke via mix)
 else
-ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR)
+ERL_CFLAGS ?= -I$(ERL_INTERFACE_INCLUDE_DIR)
+endif
+ifeq ($(ERL_INTERFACE_LIB_DIR),)
+$(warning ERL_INTERFACE_LIB_DIR not set. Invoke via mix)
+else
+ERL_LDFLAGS ?= -L$(ERL_INTERFACE_LIB_DIR)
 endif
 ifeq ($(MIX_APP_PATH),)
-$(warning MIX_APP_PATH not set. Invoke via mix)
-endif
-ifeq ($(MIX_DEPS_PATH),)
 $(warning MIX_APP_PATH not set. Invoke via mix)
 endif
 
@@ -22,7 +23,7 @@ else
 PLATFORM_OPTIONS=-Wl,-soneutron_nif $(CPP_PATH)/lib/libpulsar.so
 endif
 
-CPP_PATH=$(MIX_DEPS_PATH)/pulsar/pulsar-client-cpp
+CPP_PATH= deps/pulsar/pulsar-client-cpp
 
 default_target: all
 
@@ -35,7 +36,7 @@ priv:
 	mkdir -p $(MIX_APP_PATH)/priv/
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	  $(CC) $^ -shared $(PLATFORM_OPTIONS) -fPIC -O3 -finline-functions -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $(MIX_APP_PATH)/priv/neutron_nif.so
+	  $(CC) $^ -shared $(PLATFORM_OPTIONS) -fPIC -O3 -finline-functions -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERTS_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $(MIX_APP_PATH)/priv/neutron_nif.so
 
 
 clean:

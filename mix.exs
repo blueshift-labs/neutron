@@ -40,14 +40,7 @@ defmodule Neutron.MixProject do
     IO.inspect(System.cmd("pwd", []))
     IO.inspect("-----------------------------")
 
-    %{
-      "ERL_EI_INCLUDE_DIR" =>
-        System.get_env("ERL_EI_INCLUDE_DIR") ||
-          "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/include",
-      "ERL_EI_LIBDIR" =>
-        System.get_env("ERL_EI_LIBDIR") ||
-          "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/lib"
-    }
+    %{}
   end
 
   defp test_paths(:integration), do: ["test/integration"]
