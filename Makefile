@@ -11,9 +11,9 @@ ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR)
 endif
 
 ifeq ($(shell uname),Darwin)     # Mac OS X
-PLATFORM_OPTIONS=$(CPP_PATH)/lib/libpulsar.dylib -undefined dynamic_lookup
+PLATFORM_OPTIONS=-undefined dynamic_lookup
 else
-PLATFORM_OPTIONS=-Wl,-soneutron_nif $(CPP_PATH)/lib/libpulsar.so
+PLATFORM_OPTIONS=
 endif
 
 CPP_PATH=./deps/pulsar/pulsar-client-cpp

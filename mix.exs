@@ -6,7 +6,6 @@ defmodule Neutron.MixProject do
       app: :neutron,
       compilers: [:elixir_make] ++ Mix.compilers(),
       build_embedded: Mix.env() == :prod,
-      make_clean: ["clean"],
       make_env: make_env(),
       version: "0.1.0",
       elixir: "~> 1.10",
