@@ -11,9 +11,9 @@ ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR)
 endif
 
 ifeq ($(shell uname),Darwin)     # Mac OS X
-MAYBE_DYNAMIC_LOOKUP=-undefined dynamic_lookup
+PLATFORM_OPTIONS=-undefined dynamic_lookup
 else
-MAYBE_DYNAMIC_LOOKUP=-shared
+PLATFORM_OPTIONS=--warn-unresolved-symbols
 endif
 
 CPP_PATH=./deps/pulsar/pulsar-client-cpp
@@ -29,7 +29,7 @@ priv:
 	mkdir -p priv
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	  $(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib $(MAYBE_DYNAMIC_LOOKUP) -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
+	  $(CC) $^ -static -fPIC -O2 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib $(PLATFORM_OPTIONS) -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
 
 
 clean:
