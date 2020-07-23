@@ -37,9 +37,9 @@ defmodule Neutron.MixProject do
   defp make_env do
     %{
       "ERL_EI_INCLUDE_DIR" =>
-        System.get_env("ERL_EI_INCLUDE_DIR") || Path.join([:code.root_dir(), "usr", "include"]),
+        System.get_env("ERL_EI_INCLUDE_DIR") || "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/include",
       "ERL_EI_LIBDIR" =>
-        System.get_env("ERL_EI_LIBDIR") || Path.join([:code.root_dir(), "usr", "lib"])
+        System.get_env("ERL_EI_LIBDIR") || "#{:code.root_dir()}/erts-#{:erlang.system_info(:version)}/lib"
     }
   end
 
