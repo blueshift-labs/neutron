@@ -13,7 +13,7 @@ endif
 ifeq ($(shell uname),Darwin)     # Mac OS X
 PLATFORM_OPTIONS=-undefined dynamic_lookup
 else
-PLATFORM_OPTIONS=-Wl,--warn-unresolved-symbols
+PLATFORM_OPTIONS=-Wl,-soneutron_nif
 endif
 
 CPP_PATH=./deps/pulsar/pulsar-client-cpp
@@ -29,7 +29,7 @@ priv:
 	mkdir -p priv
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	  $(CC) $^ -static -fPIC -O2 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib $(PLATFORM_OPTIONS) -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
+	  $(CC) $^ -shared $(PLATFORM_OPTIONS) -fPIC -O2 -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
 
 
 clean:
