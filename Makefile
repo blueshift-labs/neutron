@@ -9,6 +9,9 @@ $(warning ERL_EI_LIBDIR not set. Invoke via mix)
 else
 ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR)
 endif
+ifeq ($(MIX_APP_PATH),)
+$(warning MIX_APP_PATH not set. Invoke via mix)
+endif
 
 ifeq ($(shell uname),Darwin)     # Mac OS X
 PLATFORM_OPTIONS=$(CPP_PATH)/lib/libpulsar.dylib -undefined dynamic_lookup
@@ -16,6 +19,7 @@ else
 PLATFORM_OPTIONS=-Wl,-soneutron_nif $(CPP_PATH)/lib/libpulsar.so
 endif
 
+PRIV_PATH=$(MIX_APP_PATH)/priv
 CPP_PATH=./deps/pulsar/pulsar-client-cpp
 
 default_target: all
@@ -26,10 +30,10 @@ get_deps:
 all: get_deps priv priv/neutron_nif.so
 
 priv:
-	mkdir -p priv
+	mkdir -p $(PRIV_PATH)
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	  $(CC) $^ -shared $(PLATFORM_OPTIONS) -fPIC -O2 -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $@
+	  $(CC) $^ -shared $(PLATFORM_OPTIONS) -fPIC -O2 -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -L$(CPP_PATH)/lib -lpulsar -I$(CPP_PATH)/include -o $(PRIV_PATH)
 
 
 clean:
