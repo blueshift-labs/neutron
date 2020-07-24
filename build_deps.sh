@@ -16,8 +16,8 @@ function DownloadLib()
 {
   echo "repo=$REPO rev=$REV branch=$BRANCH"
 
-  mkdir -p $DEPS_LOCATION
-  pushd $DEPS_LOCATION
+  mkdir -p $MIX_DEPS_PATH
+  pushd $MIX_DEPS_PATH
 
   if [ ! -d "$DESTINATION" ]; then
       fail_check git clone -b $BRANCH $REPO $DESTINATION
@@ -31,7 +31,7 @@ function DownloadLib()
 
 function BuildLib()
 {
-  pushd $DEPS_LOCATION
+  pushd $MIX_DEPS_PATH
   pushd $DESTINATION
 
   OS=$(uname -s)
@@ -44,22 +44,24 @@ function BuildLib()
             export OPENSSL_SSL_LIBRARY=$OPENSSL_ROOT_DIR/lib
             export CPPFLAGS=-I$OPENSSL_ROOT_DIR/include
             export LDFLAGS=-L$OPENSSL_ROOT_DIR/lib
+            cd pulsar-client-cpp
+            fail_check cmake . -DBUILD_TESTS=OFF
+            fail_check make pulsarShared -j$(nproc)
             ;;
+        *)
+            cd pulsar-client-cpp
+            fail_check cmake . -DBUILD_TESTS=OFF -DLINK_STATIC=ON
+            fail_check make pulsarStatic -j$(nproc)
   esac
-
-  cd pulsar-client-cpp
-  fail_check cmake . -DBUILD_TESTS=OFF
-  fail_check make -j$(nproc)
 
   popd
   popd
 }
 
-DEPS_LOCATION=deps
 DESTINATION=pulsar
 
-if [ -f "$DEPS_LOCATION/$DESTINATION/pulsar-client-cpp/lib/libpulsar.a" ]; then
-    echo "pulsar fork already exist. delete $DEPS_LOCATION/$DESTINATION for a fresh checkout."
+if [ -f "$MIX_DEPS_PATH/$DESTINATION/pulsar-client-cpp/lib/libpulsar.a" ]; then
+    echo "pulsar fork already exist. delete $MIX_DEPS_PATH/$DESTINATION for a fresh checkout."
     exit 0
 fi
 

@@ -5,8 +5,8 @@ defmodule Neutron.MixProject do
     [
       app: :neutron,
       compilers: [:elixir_make] ++ Mix.compilers(),
+      build_embedded: Mix.env() == :prod,
       make_clean: ["clean"],
-      make_env: make_env(),
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
@@ -32,19 +32,6 @@ defmodule Neutron.MixProject do
       {:divo_pulsar, "~> 0.1.0", only: [:dev, :integration]},
       {:stream_data, "~> 0.1", only: [:test, :integration]}
     ]
-  end
-
-  defp make_env do
-    %{
-      "ERL_EI_INCLUDE_DIR" =>
-        System.get_env("ERL_EI_INCLUDE_DIR") || Path.join([:code.root_dir(), "usr", "include"]),
-      "ERL_EI_LIBDIR" =>
-        System.get_env("ERL_EI_LIBDIR") || Path.join([:code.root_dir(), "usr", "lib"]),
-      "PULSAR_CLIENT_DIR" =>
-        Mix.Project.deps_path() <> "/pulsar/pulsar-client-cpp",
-      "PRIV_DIR" =>
-        String.replace_trailing(Mix.Project.deps_path(), "deps", "priv") <> "/neutron_nif.so"
-    }
   end
 
   defp test_paths(:integration), do: ["test/integration"]

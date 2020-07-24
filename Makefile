@@ -1,20 +1,32 @@
-# Changed some flags to the compiler to get it to work though
-ifeq ($(ERL_EI_INCLUDE_DIR),)
-$(warning ERL_EI_INCLUDE_DIR not set. Invoke via mix)
+ifeq ($(ERTS_INCLUDE_DIR),)
+$(warning ERTS_INCLUDE_DIR not set. Invoke via mix)
 else
-ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR)
+ERTS_CFLAGS ?= -I$(ERTS_INCLUDE_DIR)
 endif
-ifeq ($(ERL_EI_LIBDIR),)
-$(warning ERL_EI_LIBDIR not set. Invoke via mix)
+ifeq ($(ERL_INTERFACE_INCLUDE_DIR),)
+$(warning ERL_INTERFACE_INCLUDE_DIR not set. Invoke via mix)
 else
-ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR)
+ERL_CFLAGS ?= -I$(ERL_INTERFACE_INCLUDE_DIR)
 endif
-ifeq ($(PULSAR_CLIENT_DIR),)
-$(warning PULSAR_CLIENT_DIR not set. Invoke via mix)
+ifeq ($(ERL_INTERFACE_LIB_DIR),)
+$(warning ERL_INTERFACE_LIB_DIR not set. Invoke via mix)
+else
+ERL_LDFLAGS ?= -L$(ERL_INTERFACE_LIB_DIR)
 endif
-ifeq ($(PRIV_DIR),)
-$(warning PRIV_DIR not set. Invoke via mix)
+ifeq ($(MIX_APP_PATH),)
+$(warning MIX_APP_PATH not set. Invoke via mix)
 endif
+ifeq ($(MIX_DEPS_PATH),)
+$(warning MIX_APP_PATH not set. Invoke via mix)
+endif
+
+ifeq ($(shell uname),Darwin)     # Mac OS X
+PLATFORM_OPTIONS=-undefined dynamic_lookup -L$(CPP_PATH)/lib -lpulsar
+else
+PLATFORM_OPTIONS=-lssl -lcrypto -ldl -lpthread -lboost_system -lboost_regex -lcurl -lprotobuf -lzstd -lz $(CPP_PATH)/lib/libpulsar.a
+endif
+
+CPP_PATH=$(MIX_DEPS_PATH)/pulsar/pulsar-client-cpp
 
 default_target: all
 
@@ -24,12 +36,12 @@ get_deps:
 all: get_deps priv priv/neutron_nif.so
 
 priv:
-	mkdir -p priv
+	mkdir -p $(MIX_APP_PATH)/priv/
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	$(CC) $^ -static -fPIC -O3 -DDEBUG -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -undefined dynamic_lookup -pedantic -L$(PULSAR_CLIENT_DIR)/lib -lpulsar -I$(PULSAR_CLIENT_DIR)/include -o $(PRIV_DIR)
+	  $(CC) $^ -shared -lei $(PLATFORM_OPTIONS) -fPIC -O3 -finline-functions -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERTS_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -I/usr/local/ssl/include -L/usr/local/ssl/lib -I$(CPP_PATH)/include -o $(MIX_APP_PATH)/priv/neutron_nif.so
 
 clean:
-	$(RM) priv/neutron_nif.so
+	$(RM) $(MIX_APP_PATH)/priv/neutron_nif.so
 
 .PHONY: default_target get_deps all clean
