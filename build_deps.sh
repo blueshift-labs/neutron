@@ -49,7 +49,7 @@ function BuildLib()
 
   cd pulsar-client-cpp
   fail_check cmake . -DBUILD_TESTS=OFF
-  fail_check make -j$(nproc)
+  fail_check make pulsarStatic -j$(nproc)
 
   popd
   popd

@@ -41,7 +41,6 @@ priv:
 priv/neutron_nif.so: ./c_src/neutron_nif.c
 	  $(CC) $^ -shared -lei $(PLATFORM_OPTIONS) -fPIC -O3 -finline-functions -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERTS_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic $(CPP_PATH)/lib/libpulsar.a -I/usr/local/ssl/include -L/usr/local/ssl/lib -I$(CPP_PATH)/include -o $(MIX_APP_PATH)/priv/neutron_nif.so
 
-
 clean:
 	$(RM) $(MIX_APP_PATH)/priv/neutron_nif.so
 

@@ -7,7 +7,6 @@ defmodule Neutron.MixProject do
       compilers: [:elixir_make] ++ Mix.compilers(),
       build_embedded: Mix.env() == :prod,
       make_clean: ["clean"],
-      make_env: make_env(),
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
@@ -33,14 +32,6 @@ defmodule Neutron.MixProject do
       {:divo_pulsar, "~> 0.1.0", only: [:dev, :integration]},
       {:stream_data, "~> 0.1", only: [:test, :integration]}
     ]
-  end
-
-  defp make_env do
-    IO.inspect(System.cmd("ls", []))
-    IO.inspect(System.cmd("pwd", []))
-    IO.inspect("-----------------------------")
-
-    %{}
   end
 
   defp test_paths(:integration), do: ["test/integration"]
