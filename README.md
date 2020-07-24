@@ -73,4 +73,4 @@ Compression is still not supported for producing but will likely be added in a l
 
 
 ### Docker
-- For debian-based packages `cmake libssl-dev liblog4cxx-dev git build-essential liblz4-dev libzstd-dev` are required as depdencies. I also noticed an issue with the pulsar C/C++ library and using alpine linux.
+- For debian-based packages `cmake libssl-dev libcurl4-openssl-dev liblog4cxx-dev libprotobuf-dev protobuf-compiler libboost-all-dev libjsoncpp-dev git build-essential google-mock libgtest-dev` are required as dependencies. I also noticed an issue with the pulsar C/C++ library and using alpine linux.

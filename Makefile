@@ -23,7 +23,7 @@ endif
 ifeq ($(shell uname),Darwin)     # Mac OS X
 PLATFORM_OPTIONS=-undefined dynamic_lookup -L$(CPP_PATH)/lib -lpulsar
 else
-PLATFORM_OPTIONS=-lssl -lcrypto -ldl -lpthread $(CPP_PATH)/lib/libpulsarwithdeps.a
+PLATFORM_OPTIONS=-lssl -lcrypto -ldl -lpthread $(CPP_PATH)/lib/libpulsar.a
 endif
 
 CPP_PATH=$(MIX_DEPS_PATH)/pulsar/pulsar-client-cpp

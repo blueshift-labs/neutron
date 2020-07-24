@@ -51,7 +51,7 @@ function BuildLib()
         *)
             cd pulsar-client-cpp
             fail_check cmake . -DBUILD_TESTS=OFF -DLINK_STATIC=ON
-            fail_check make pulsarStaticWithDeps -j$(nproc)
+            fail_check make pulsarStatic -j$(nproc)
   esac
 
   popd
