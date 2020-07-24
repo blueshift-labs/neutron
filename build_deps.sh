@@ -44,12 +44,15 @@ function BuildLib()
             export OPENSSL_SSL_LIBRARY=$OPENSSL_ROOT_DIR/lib
             export CPPFLAGS=-I$OPENSSL_ROOT_DIR/include
             export LDFLAGS=-L$OPENSSL_ROOT_DIR/lib
+            cd pulsar-client-cpp
+            fail_check cmake . -DBUILD_TESTS=OFF
+            fail_check make pulsarShared -j$(nproc)
             ;;
+        *)
+            cd pulsar-client-cpp
+            fail_check cmake . -DBUILD_TESTS=OFF -DLINK_STATIC=ON
+            fail_check make pulsarStaticWithDeps -j$(nproc)
   esac
-
-  cd pulsar-client-cpp
-  fail_check cmake . -DBUILD_TESTS=OFF
-  fail_check make pulsarStatic -j$(nproc)
 
   popd
   popd
