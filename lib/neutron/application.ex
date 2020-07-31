@@ -9,6 +9,10 @@ defmodule Neutron.Application do
 
   @dynamic_supervisor Neutron.DynamicSupervisor
 
+  def children do
+    DynamicSupervisor.which_children(@dynamic_supervisor)
+  end
+
   def start(_type, _args) do
     children = [
       {DynamicSupervisor,

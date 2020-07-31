@@ -44,6 +44,36 @@ defmodule Neutron do
     Neutron.Application.start_child(PulsarConsumer.child_spec(args))
   end
 
+  @spec stop_consumers_by_subscription(String.t()) :: [DynamicSupervisor.terminate_child()]
+  def stop_consumers_by_subscription(subscription) when is_binary(subscription) do
+    Enum.reduce(Neutron.Application.children(), [], fn
+      {_, pid, _type, [Neutron.PulsarConsumer]}, acc when is_pid(pid) ->
+        state = :sys.get_state(pid)
+        maybe_subscription = get_in(state, [:config, :subscription])
+        if maybe_subscription == subscription do
+          [Neutron.Application.terminate_child(pid)|acc]
+        else
+          acc
+        end
+      _, acc -> acc
+    end)
+  end
+
+  @spec stop_consumers_by_topic(String.t()) :: [DynamicSupervisor.terminate_child()]
+  def stop_consumers_by_topic(topic) when is_binary(topic) do
+    Enum.reduce(Neutron.Application.children(), [], fn
+      {_, pid, _type, [Neutron.PulsarConsumer]}, acc when is_pid(pid) ->
+        state = :sys.get_state(pid)
+        maybe_topic = get_in(state, [:config, :topic])
+        if maybe_topic == topic do
+          [Neutron.Application.terminate_child(pid)|acc]
+        else
+          acc
+        end
+      _, acc -> acc
+    end)
+  end
+
   @doc """
   Does a synchronous produce to given topic binary with given message binary and optional produce_opts.
   produce_opts: the keys are :deliver_after_ms and :deliver_at_ms both take an int as the value for :deliver_at_ms the int is a unix timestamp in milliseconds for :deliver_after_ms it's the delay to send the message after in milliseconds.

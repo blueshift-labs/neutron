@@ -60,7 +60,7 @@ function BuildLib()
 
 DESTINATION=pulsar
 
-if [ -f "$MIX_DEPS_PATH/$DESTINATION/pulsar-client-cpp/lib/libpulsar.a" ]; then
+if [[ -f "$MIX_DEPS_PATH/$DESTINATION/pulsar-client-cpp/lib/libpulsar.a" || -f "$MIX_DEPS_PATH/$DESTINATION/pulsar-client-cpp/lib/libpulsar.dylib" ]]; then
     echo "pulsar fork already exist. delete $MIX_DEPS_PATH/$DESTINATION for a fresh checkout."
     exit 0
 fi
