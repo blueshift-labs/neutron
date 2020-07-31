@@ -43,6 +43,12 @@ static ErlNifResourceType *nif_pulsar_msg_id_type = NULL;
 static ErlNifResourceType *nif_pulsar_producer_type = NULL;
 static ErlNifResourceType *nif_delivery_callback_ctx_type = NULL;
 
+static void msg_id_destr(ErlNifEnv *env, void *obj) {
+  pulsar_msg_id *p_msg_id = (pulsar_msg_id *)obj;
+  pulsar_message_id_free(p_msg_id->msg_id);
+  p_msg_id->msg_id = NULL;
+}
+
 static ERL_NIF_TERM
 make_atom(ErlNifEnv *env, const char *atom_name)
 {
@@ -280,7 +286,6 @@ ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
         return make_error_tuple(env, "couldn't retrieve consumer resource from given reference");
     }
 
-
     if (p_consumer->consumer == NULL)
     {
         return make_error_tuple(env, "passed-in a destroyed consumer");
@@ -300,12 +305,8 @@ ERL_NIF_TERM ack(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_result res = pulsar_consumer_acknowledge_id(p_consumer->consumer, p_msg_id->msg_id);
 
     if (res != pulsar_result_Ok) {
-        pulsar_message_id_free(p_msg_id->msg_id);
-        enif_release_resource(p_msg_id);
         return make_error_tuple(env, "failed to ack");
     } else {
-        pulsar_message_id_free(p_msg_id->msg_id);
-        enif_release_resource(p_msg_id);
         return ATOMS.atomOk;
     }
 }
@@ -338,12 +339,8 @@ ERL_NIF_TERM ack_all(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     pulsar_result res = pulsar_consumer_acknowledge_cumulative_id(p_consumer->consumer, p_msg_id->msg_id);
 
     if (res != pulsar_result_Ok) {
-        pulsar_message_id_free(p_msg_id->msg_id);
-        enif_release_resource(p_msg_id);
         return make_error_tuple(env, "failed to ack_all");
     } else {
-        pulsar_message_id_free(p_msg_id->msg_id);
-        enif_release_resource(p_msg_id);
         return ATOMS.atomOk;
     }
 }
@@ -658,7 +655,7 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     rt_consumer = enif_open_resource_type(env, "neutron_nif", "pulsar_consumer", NULL, ERL_NIF_RT_CREATE, NULL);
     if (!rt_consumer) return -1;
 
-    rt_msg_id = enif_open_resource_type(env, "neutron_nif", "pulsar_msg_id", NULL, ERL_NIF_RT_CREATE, NULL);
+    rt_msg_id = enif_open_resource_type(env, "neutron_nif", "pulsar_msg_id", msg_id_destr, ERL_NIF_RT_CREATE, NULL);
     if (!rt_msg_id) return -1;
 
     rt_producer = enif_open_resource_type(env, "neutron_nif", "pulsar_producer", NULL, ERL_NIF_RT_CREATE, NULL);
