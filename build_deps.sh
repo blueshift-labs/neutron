@@ -45,8 +45,8 @@ function BuildLib()
             export CPPFLAGS=-I$OPENSSL_ROOT_DIR/include
             export LDFLAGS=-L$OPENSSL_ROOT_DIR/lib
             cd pulsar-client-cpp
-            fail_check cmake . -DBUILD_TESTS=OFF -DBUILD_PYTHON_WRAPPER=OFF -DBoost_INCLUDE_DIRS=$(brew --prefix openssl)/include -DProtobuf_INCLUDE_DIR=$(brew --prefix protobuf)/include -DProtobuf_LIBRARIES=$(brew --prefix protobuf)/lib/libprotobuf.dylib
-            fail_check make pulsarShared pulsarStatic -j$(nproc)
+            fail_check cmake . -DBUILD_TESTS=OFF -DBUILD_PYTHON_WRAPPER=OFF -DBoost_INCLUDE_DIRS=$(brew --prefix boost)/include -DProtobuf_INCLUDE_DIR=$(brew --prefix protobuf)/include -DProtobuf_LIBRARIES=$(brew --prefix protobuf)/lib/libprotobuf.dylib
+            fail_check make pulsarShared -j$(nproc)
             ;;
         *)
             cd pulsar-client-cpp
