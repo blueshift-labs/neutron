@@ -57,7 +57,10 @@ defmodule Neutron.PulsarConsumer do
     res =
       try do
         # todo investigate the bug that sometimes causes a unicode character from C library with pulsar
-        callback_module.handle_message(String.trim_trailing(msg, "\a"))
+        callback_module.handle_message(
+          String.trim_trailing(msg, "\a"),
+          state
+        )      
       catch
         _any -> {:error, :exception}
       end
