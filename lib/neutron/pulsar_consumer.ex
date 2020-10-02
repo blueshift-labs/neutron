@@ -57,10 +57,11 @@ defmodule Neutron.PulsarConsumer do
     res =
       try do
         # todo investigate the bug that sometimes causes a unicode character from C library with pulsar
+        {config, _} = Map.split(state.config, [:subscription, :topic])
+
         callback_module.handle_message(
           String.trim_trailing(msg, "\a"),
-          state.config.topic,
-          state.config.subscription
+          config
         )
       catch
         _any -> {:error, :exception}
