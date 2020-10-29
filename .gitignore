@@ -24,3 +24,6 @@ neutron-*.tar
 
 /priv/
 
+*.swp
+
+.vscode
