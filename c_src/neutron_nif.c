@@ -9,7 +9,7 @@ typedef struct {
     ERL_NIF_TERM atomOk;
     ERL_NIF_TERM atomError;
     ERL_NIF_TERM atomDelivery;
-    ERL_NIF_TERM atomListener;
+    ERL_NIF_TERM atomNeutronMsg;
 } atoms;
 
 atoms ATOMS;
@@ -61,13 +61,18 @@ make_atom(ErlNifEnv *env, const char *atom_name)
 }
 
 static ERL_NIF_TERM
-make_error_tuple(ErlNifEnv *env, const char *reason)
+make_binary(ErlNifEnv* env, const char* buff, size_t length)
 {
-    ErlNifBinary bin;
-    ERL_NIF_TERM temp = enif_make_string(env, reason, ERL_NIF_LATIN1);
-    enif_inspect_iolist_as_binary(env, temp, &bin);
-    enif_make_binary(env, &bin);
-    return enif_make_tuple2(env, ATOMS.atomError, enif_make_binary(env, &bin));
+    ERL_NIF_TERM term;
+    uint8_t *destination_buffer = enif_make_new_binary(env, length, &term);
+    memcpy(destination_buffer, buff, length);
+    return term;
+}
+
+static ERL_NIF_TERM
+make_error_tuple(ErlNifEnv* env, const char* error)
+{
+    return enif_make_tuple2(env, ATOMS.atomError, make_binary(env, error, strlen(error)));
 }
 
 ERL_NIF_TERM make_client(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -158,13 +163,9 @@ ERL_NIF_TERM destroy_client(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 static void listener_callback(pulsar_consumer_t* consumer, pulsar_message_t* message, void* ctx) {
     ErlNifPid actual_pid = *(ErlNifPid *)ctx;
 
-    ErlNifBinary bin;
-    ERL_NIF_TERM ret_bin;
     ErlNifEnv* env = enif_alloc_env();
-    ERL_NIF_TERM temp = enif_make_string(env, pulsar_message_get_data(message), ERL_NIF_LATIN1);
-    enif_inspect_iolist_as_binary(env, temp, &bin);
-    ret_bin = enif_make_binary(env, &bin);
 
+    // id
     pulsar_msg_id *p_msg_id;
     p_msg_id = enif_alloc_resource(nif_pulsar_msg_id_type, sizeof(pulsar_msg_id));
 
@@ -174,7 +175,46 @@ static void listener_callback(pulsar_consumer_t* consumer, pulsar_message_t* mes
     ERL_NIF_TERM p_msg_id_res = enif_make_resource(env, p_msg_id);
     enif_release_resource(p_msg_id);
 
-    enif_send(NULL, &actual_pid, env, enif_make_tuple3(env, ATOMS.atomListener, ret_bin, p_msg_id_res));
+    // partition key
+    const char *part_key = pulsar_message_get_partitionKey(message);
+    ERL_NIF_TERM ret_part_key = make_binary(env, part_key, strlen(part_key));
+
+    // ordering key
+    const char *order_key = pulsar_message_get_orderingKey(message);
+    ERL_NIF_TERM ret_order_key = make_binary(env, order_key, strlen(order_key));
+
+    // publish ts
+    uint64_t publish_ts = pulsar_message_get_publish_timestamp(message);
+    ERL_NIF_TERM ret_publish_ts = enif_make_uint64(env, publish_ts);
+
+    // event ts
+    uint64_t event_ts = pulsar_message_get_event_timestamp(message);
+    ERL_NIF_TERM ret_event_ts = enif_make_uint64(env, event_ts);
+
+    // redeliver count
+    int redeliver_ct = pulsar_message_get_redelivery_count(message);
+    ERL_NIF_TERM ret_redeliver_ct = enif_make_int(env, redeliver_ct);
+
+    // properties
+    pulsar_string_map_t *props = pulsar_message_get_properties(message);
+    int props_size = pulsar_string_map_size(props);
+    ERL_NIF_TERM ret_props_arr[props_size];
+    for(int i = 0; i < props_size; i++){
+        const char *key = pulsar_string_map_get_key(props, i);
+        const char *value = pulsar_string_map_get_value(props, i);
+        ret_props_arr[i] = enif_make_tuple2(env,
+            make_binary(env, key, strlen(key)),
+            make_binary(env, value, strlen(value))
+        );
+    }
+    ERL_NIF_TERM ret_props = enif_make_list_from_array(env, ret_props_arr, props_size);
+    pulsar_string_map_free(props);
+
+    // payload
+    ERL_NIF_TERM ret_payload = make_binary(env, pulsar_message_get_data(message), pulsar_message_get_length(message));
+
+    enif_send(NULL, &actual_pid, env, enif_make_tuple9(env, ATOMS.atomNeutronMsg,
+        p_msg_id_res, ret_part_key, ret_order_key, ret_publish_ts, ret_event_ts, ret_redeliver_ct, ret_props, ret_payload));
 
     enif_free_env(env);
     pulsar_message_free(message);
@@ -403,18 +443,18 @@ void maybe_set_message_options(ErlNifEnv* env, pulsar_message_t *message, ERL_NI
     ERL_NIF_TERM deliver_after_ms_atm = make_atom(env, "deliver_after_ms");
     ERL_NIF_TERM deliver_at_ms_atm = make_atom(env, "deliver_at_ms");
 
-    uint64_t deliver_after_ms;
+    unsigned long deliver_after_ms;
     ERL_NIF_TERM deliver_after_ms_term;
     if (enif_get_map_value(env, map, deliver_after_ms_atm, &deliver_after_ms_term) && enif_get_uint64(env, deliver_after_ms_term, &deliver_after_ms))
     {
-        pulsar_message_set_deliver_after(message, deliver_after_ms);
+        pulsar_message_set_deliver_after(message, (uint64_t)deliver_after_ms);
     }
 
-    uint64_t deliver_at_ms;
+    unsigned long deliver_at_ms;
     ERL_NIF_TERM deliver_at_ms_term;
     if (enif_get_map_value(env, map, deliver_at_ms_atm, &deliver_at_ms_term) && enif_get_uint64(env, deliver_at_ms_term, &deliver_at_ms))
     {
-        pulsar_message_set_deliver_at(message, deliver_at_ms);
+        pulsar_message_set_deliver_at(message, (uint64_t)deliver_at_ms);
     }
 }
 
@@ -485,17 +525,15 @@ ERL_NIF_TERM sync_produce(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 
 static void delivery_callback(pulsar_result result, pulsar_message_id_t* msg_id, void* ctx) {
     delivery_callback_ctx deliv_cb_ctx = *(delivery_callback_ctx *)ctx;
-    const char* msg = deliv_cb_ctx.msg_data;
     ErlNifPid actual_pid = deliv_cb_ctx.callback_pid;
-    ErlNifBinary bin, temp_bin;
-    ERL_NIF_TERM ret_bin, msg_bin;
+
     ErlNifEnv* env = enif_alloc_env();
-    ERL_NIF_TERM temp = enif_make_string(env, pulsar_message_id_str(msg_id), ERL_NIF_LATIN1);
-    ERL_NIF_TERM temp_msg = enif_make_string(env, msg, ERL_NIF_LATIN1);
-    enif_inspect_iolist_as_binary(env, temp, &bin);
-    enif_inspect_iolist_as_binary(env, temp_msg, &temp_bin);
-    ret_bin = enif_make_binary(env, &bin);
-    msg_bin = enif_make_binary(env, &temp_bin);
+
+    char *p_message_id_str = pulsar_message_id_str(msg_id);
+    ERL_NIF_TERM ret_bin = make_binary(env, p_message_id_str, strlen(p_message_id_str));
+
+    const char* msg = deliv_cb_ctx.msg_data;
+    ERL_NIF_TERM msg_bin = make_binary(env, msg, strlen(msg));
 
     if (result == pulsar_result_Ok) {
         enif_send(NULL, &actual_pid, env, enif_make_tuple4(env, ATOMS.atomDelivery, ATOMS.atomOk, ret_bin, msg_bin));
@@ -641,7 +679,7 @@ static int on_load(ErlNifEnv* env, void** priv, ERL_NIF_TERM info)
     ATOMS.atomOk = make_atom(env, "ok");
     ATOMS.atomError = make_atom(env, "error");
     ATOMS.atomDelivery = make_atom(env, "delivery_callback");
-    ATOMS.atomListener = make_atom(env, "listener_callback");
+    ATOMS.atomNeutronMsg = make_atom(env, "neutron_msg");
 
     ErlNifResourceType *rt_client;
     ErlNifResourceType *rt_consumer;

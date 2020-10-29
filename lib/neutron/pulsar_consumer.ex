@@ -51,13 +51,13 @@ defmodule Neutron.PulsarConsumer do
 
   @impl true
   def handle_info(
-        {:listener_callback, msg, msg_id_ref},
+        {:neutron_msg, msg_id_ref, _partition_key, _ordering_key, _publish_ts, _event_ts, _redelivery_count, _properties, _payload} = msg,
         %{config: %{callback_module: callback_module}, consumer_ref: consumer_ref} = state
       ) do
     res =
       try do
         # todo investigate the bug that sometimes causes a unicode character from C library with pulsar
-        callback_module.handle_message(String.trim_trailing(msg, "\a"))
+        callback_module.handle_message(msg, state)
       catch
         _any -> {:error, :exception}
       end
