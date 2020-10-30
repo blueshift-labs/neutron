@@ -4,8 +4,14 @@ defmodule NeutronTest do
   use Divo, services: [:pulsar]
 
   property "sync produce is always successful" do
-    check all(message <- binary()) do
-      assert :ok == Neutron.sync_produce("my-topic-produce", message)
+    check all(
+            message <- binary(),
+            partition_key <- binary()
+          ) do
+      assert :ok ==
+               Neutron.sync_produce("my-topic-produce", message, %{
+                 partition_key: partition_key
+               })
     end
   end
 
@@ -23,7 +29,11 @@ defmodule NeutronTest do
     message = "hello test deliver"
 
     {:ok, pid} = Neutron.create_async_producer("my-topic-async-produce", DeliverCallback)
-    :ok = Neutron.async_produce(pid, message)
+
+    :ok =
+      Neutron.async_produce(pid, message, %{
+        partition_key: UUID.uuid4()
+      })
 
     assert_receive {:test_deliver, {:ok, new_msg_id, ^message}}
   end
@@ -34,20 +44,39 @@ defmodule NeutronTest do
       @compiled_pid self()
 
       @impl true
-      def handle_message(msg) do
-        _msg = send(@compiled_pid, {:test_callback, msg})
+      def handle_message(
+            {:neutron_msg, topic, _msg_id, partition_key, _publish_ts, event_ts,
+             _redelivery_count, properties, payload},
+            _state
+          ) do
+        send(
+          @compiled_pid,
+          {:test_callback, topic, partition_key, event_ts, properties, payload}
+        )
+
         Process.sleep(10)
         :ack
       end
     end
 
-    message = "hello test consume"
-    topic = "my-topic-consume"
+    partition_key = UUID.uuid4()
+    event_ts = :rand.uniform(10000)
+    id = UUID.uuid4()
+    action = "index"
+    properties = [{"id", id}, {"action", action}] |> Enum.reverse()
+    payload = UUID.uuid4()
 
+    topic = "persistent://public/default/my-topic-consume"
     {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerCallback, topic: topic)
-    :ok = Neutron.sync_produce(topic, message)
 
-    assert_receive {:test_callback, message}
+    :ok =
+      Neutron.sync_produce(topic, payload, %{
+        partition_key: partition_key,
+        event_ts: event_ts,
+        properties: properties
+      })
+
+    assert_receive {:test_callback, ^topic, ^partition_key, ^event_ts, ^properties, ^payload}
   end
 
   test "sync produce delay_after and consume roundtrip" do
@@ -58,8 +87,12 @@ defmodule NeutronTest do
       def delay, do: @delay_ms
 
       @impl true
-      def handle_message(msg) do
-        old_time_unix_ms = String.to_integer(msg)
+      def handle_message(
+            {:neutron_msg, _topic, _msg_id, _partition_key, _publish_ts, _event_ts,
+             _redelivery_count, _properties, payload},
+            _state
+          ) do
+        old_time_unix_ms = String.to_integer(payload)
         now_unix_ms = DateTime.to_unix(DateTime.utc_now(), :millisecond)
 
         # the default tick is 1 second so we give a 1 second buffer
@@ -88,8 +121,12 @@ defmodule NeutronTest do
       def delay, do: @delay_ms
 
       @impl true
-      def handle_message(msg) do
-        old_time_unix_ms = String.to_integer(msg)
+      def handle_message(
+            {:neutron_msg, _topic, _msg_id, _partition_key, _publish_ts, _event_ts,
+             _redelivery_count, _properties, payload},
+            _state
+          ) do
+        old_time_unix_ms = String.to_integer(payload)
         now_unix_ms = DateTime.to_unix(DateTime.utc_now(), :millisecond)
 
         # the default tick is 1 second so we give a 1 second buffer

@@ -51,7 +51,7 @@ defmodule Neutron.PulsarConsumer do
 
   @impl true
   def handle_info(
-        {:neutron_msg, msg_id_ref, _partition_key, _ordering_key, _publish_ts, _event_ts, _redelivery_count, _properties, _payload} = msg,
+        {:neutron_msg, _topic, msg_id_ref, _partition_key, _publish_ts, _event_ts, _redelivery_count, _properties, _payload} = msg,
         %{config: %{callback_module: callback_module}, consumer_ref: consumer_ref} = state
       ) do
     res =

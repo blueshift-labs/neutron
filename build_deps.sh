@@ -67,7 +67,7 @@ fi
 
 REPO=https://github.com/blueshift-labs/pulsar
 BRANCH=v2.6.1-bsft
-REV=f34dc7e245aa432d21d4e91a89f4b3bdb89dc96a
+REV=1c8919a7eb3f31c9600c61dc0480ace7b272a79e
 
 DownloadLib
 BuildLib

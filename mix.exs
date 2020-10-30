@@ -30,7 +30,8 @@ defmodule Neutron.MixProject do
       {:credo, "~> 1.4", only: [:dev], runtime: false},
       {:divo, "~> 1.1.9", only: [:dev, :integration]},
       {:divo_pulsar, "~> 0.1.0", only: [:dev, :integration]},
-      {:stream_data, "~> 0.1", only: [:test, :integration]}
+      {:stream_data, "~> 0.1", only: [:test, :integration]},
+      {:elixir_uuid, "~> 1.2", only: [:dev, :integration]}
     ]
   end
 
