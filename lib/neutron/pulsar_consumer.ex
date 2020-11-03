@@ -34,29 +34,34 @@ defmodule Neutron.PulsarConsumer do
       raise "invalid arg given. Please pass-in a String.t()"
     end
 
-    GenServer.start_link(__MODULE__, %{
-      topic: topic,
-      subscription: subscription,
-      callback_module: callback_module,
-      consumer_type: consumer_type
-    })
+    GenServer.start_link(
+      __MODULE__,
+      arg
+      |> Enum.into(%{})
+      |> Map.merge(%{
+        topic: topic,
+        subscription: subscription,
+        callback_module: callback_module,
+        consumer_type: consumer_type
+      })
+    )
   end
 
   @impl true
   def init(config) do
     Process.flag(:trap_exit, true)
     {:ok, consumer_ref} = create_consumer(config)
-    {:ok, %{config: config, consumer_ref: consumer_ref}}
+    {:ok, Map.put(config, :consumer_ref, consumer_ref)}
   end
 
   @impl true
   def handle_info(
-        {:neutron_msg, _topic, msg_id_ref, _partition_key, _publish_ts, _event_ts, _redelivery_count, _properties, _payload} = msg,
-        %{config: %{callback_module: callback_module}, consumer_ref: consumer_ref} = state
+        {:neutron_msg, _topic, msg_id_ref, _partition_key, _publish_ts, _event_ts,
+         _redelivery_count, _properties, _payload} = msg,
+        %{callback_module: callback_module, consumer_ref: consumer_ref} = state
       ) do
     res =
       try do
-        # todo investigate the bug that sometimes causes a unicode character from C library with pulsar
         callback_module.handle_message(msg, state)
       catch
         _any -> {:error, :exception}

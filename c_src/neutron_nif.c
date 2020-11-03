@@ -322,10 +322,6 @@ ERL_NIF_TERM do_consume(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     pulsar_result res = pulsar_client_subscribe(p_client->client, topic_str, subscription_str, consumer_conf, &consumer);
     if (res != pulsar_result_Ok)
     {
-        printf("::::::::::::::::::::::::::::::::::\n");
-        printf("%d\n", pulsar_result_Ok);
-        printf("%d\n", res);
-        printf("::::::::::::::::::::::::::::::::::\n");
         return make_error_tuple(env, "failed to make pulsar consumer");
     }
     pulsar_consumer_configuration_free(consumer_conf);
