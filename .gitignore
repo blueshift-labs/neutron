@@ -27,3 +27,4 @@ neutron-*.tar
 *.swp
 
 .vscode
+.DS_Store

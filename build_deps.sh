@@ -65,9 +65,9 @@ if [[ -f "$MIX_DEPS_PATH/$DESTINATION/pulsar-client-cpp/lib/libpulsar.a" || -f "
     exit 0
 fi
 
-REPO=https://github.com/blueshift-labs/pulsar
-BRANCH=v2.6.1-bsft
-REV=1c8919a7eb3f31c9600c61dc0480ace7b272a79e
+REPO=https://github.com/apache/pulsar
+BRANCH=v2.7.0
+REV=b0c45952d063b754e387b3f9cbff279b9885b107
 
 DownloadLib
 BuildLib
