@@ -5,6 +5,6 @@ config :logger, level: :info
 
 config :neutron,
   divo: [
-    {DivoPulsar, [port: 8080, version: "2.6.1"]}
+    {DivoPulsar, [port: 8080, version: "2.7.0"]}
   ],
   divo_wait: [dwell: 10_000, max_tries: 50]
