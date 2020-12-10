@@ -30,10 +30,11 @@ defmodule Neutron.MixProject do
     [
       {:elixir_make, "~> 0.6", runtime: false},
       {:credo, "~> 1.5", only: [:dev], runtime: false},
-      {:divo, "~> 1.3", only: [:dev, :integration]},
+      {:divo, "~> 1.3", only: [:dev, :integration], override: true},
       {:divo_pulsar, "~> 0.1.1", only: [:dev, :integration]},
       {:stream_data, "~> 0.5", only: [:test, :integration]},
-      {:elixir_uuid, "~> 1.2", only: [:dev, :integration]}
+      {:elixir_uuid, "~> 1.2", only: [:dev, :integration]},
+      {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
   end
 
@@ -42,7 +43,9 @@ defmodule Neutron.MixProject do
 
   defp package() do
     [
-      organization: "blueshift",
+      links: %{
+        "GitHub" => "https://github.com/blueshift-labs/neutron"
+      },
       licenses: ["Apache-2.0"],
       source_url: "https://github.com/blueshift-labs/neutron"
     ]
