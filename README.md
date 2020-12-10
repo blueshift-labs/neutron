@@ -4,12 +4,12 @@
 - The persistent_term API is being used so this requires OTP 21+ hence elixir 1.10+.
 - Caution `ack_all` doesn't work as expected with `shared` subscription.
 
-## Installation (this might go to hex eventually)
+## Installation
 
 ```elixir
 def deps do
   [
-    {:neutron, github: "IRog/neutron"}
+    {:neutron, "~> 0.1"}
   ]
 end
 ```
