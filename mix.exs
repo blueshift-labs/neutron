@@ -11,7 +11,9 @@ defmodule Neutron.MixProject do
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      test_paths: test_paths(Mix.env())
+      test_paths: test_paths(Mix.env()),
+      package: package(),
+      description: "Elixir client for Apache Pulsar, uses CPP client"
     ]
   end
 
@@ -37,4 +39,12 @@ defmodule Neutron.MixProject do
 
   defp test_paths(:integration), do: ["test/integration"]
   defp test_paths(_), do: ["test/unit"]
+
+  defp package() do
+    [
+      organization: "blueshift",
+      licenses: ["Apache-2.0"],
+      source_url: "https://github.com/blueshift-labs/neutron"
+    ]
+  end
 end
