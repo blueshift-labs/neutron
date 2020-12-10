@@ -47,7 +47,15 @@ defmodule Neutron.MixProject do
         "GitHub" => "https://github.com/blueshift-labs/neutron"
       },
       licenses: ["Apache-2.0"],
-      source_url: "https://github.com/blueshift-labs/neutron"
+      source_url: "https://github.com/blueshift-labs/neutron",
+      files: [
+        "lib",
+        "mix.exs",
+        "README.md",
+        "c_src",
+        "Makefile",
+        "build_deps.sh"
+      ]
     ]
   end
 end
