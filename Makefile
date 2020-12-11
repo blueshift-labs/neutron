@@ -30,18 +30,26 @@ endif
 
 default_target: all
 
-get_deps:
-	@./build_deps.sh
-
-all: get_deps priv priv/neutron_nif.so
+all: priv priv/neutron_nif.so
 
 priv:
 	mkdir -p $(MIX_APP_PATH)/priv/
 
 priv/neutron_nif.so: ./c_src/neutron_nif.c
-	$(CC) $^ -shared -lei $(PLATFORM_OPTIONS) -fPIC -O3 -finline-functions -Wunused -Wall -Wpointer-arith -Wcast-align -Wcast-qual $(ERL_CFLAGS) $(ERTS_CFLAGS) $(ERL_LDFLAGS) -dynamiclib -pedantic -I/usr/local/ssl/include -L/usr/local/ssl/lib -I$(CPP_PATH)/include -o $(MIX_APP_PATH)/priv/neutron_nif.so
-
+	$(CC) $^ \
+		-shared \
+		-pedantic \
+		-fPIC \
+		-O3 \
+		-finline-functions \
+		c_src/neutron_nif.c \
+		-o $(MIX_APP_PATH)/priv/neutron_nif.so \
+		/usr/lib/libpulsar.so \
+		-I/usr/local/ssl/include \
+		$(ERL_CFLAGS) \
+		$(ERTS_CFLAGS) \
+		$(ERL_LDFLAGS)
 clean:
 	$(RM) $(MIX_APP_PATH)/priv/neutron_nif.so
 
-.PHONY: default_target get_deps all clean
+.PHONY: default_target all clean
