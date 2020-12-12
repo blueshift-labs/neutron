@@ -42,7 +42,6 @@ priv/neutron_nif.so: ./c_src/neutron_nif.c
 		-fPIC \
 		-O3 \
 		-finline-functions \
-		c_src/neutron_nif.c \
 		-o $(MIX_APP_PATH)/priv/neutron_nif.so \
 		/usr/lib/libpulsar.so \
 		-I/usr/local/ssl/include \
