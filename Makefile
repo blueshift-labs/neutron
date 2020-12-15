@@ -25,7 +25,6 @@ PULSAR_VERSION=2.7.0
 
 ifeq ($(shell uname),Darwin)     # Mac OS X
 	PLATFORM_OPTIONS=-undefined dynamic_lookup -L/usr/local/Cellar/libpulsar/$(PULSAR_VERSION)/lib -lpulsar -rpath /usr/local/Cellar/libpulsar/$(PULSAR_VERSION)/lib
-	# PLATFORM_OPTIONS=/usr/local/Cellar/libpulsar/$(PULSAR_VERSION)/lib/libpulsar.dylib
 else
 	PLATFORM_OPTIONS=/usr/lib/libpulsar.so
 endif
