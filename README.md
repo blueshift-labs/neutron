@@ -4,6 +4,9 @@
 - The persistent_term API is being used so this requires OTP 21+ hence elixir 1.10+.
 - Caution `ack_all` doesn't work as expected with `shared` subscription.
 
+https://pulsar.apache.org/docs/en/client-libraries-cpp/
+https://pulsar.apache.org/api/cpp/
+
 ## Installation
 
 ```elixir

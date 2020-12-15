@@ -1,73 +1,51 @@
 #!/usr/bin/env bash
 
-# mostly taken from https://github.com/silviucpp/erlkaf/blob/master/build_deps.sh
-
-function fail_check()
+function DownloadLib()
 {
-    "$@"
-    local status=$?
-    if [ $status -ne 0 ]; then
-        echo "error with $1" >&2
+    if command -v apt-get &> /dev/null
+    then
+        echo "apt-get found"
+        LIBPULSAR_PATH=/usr/lib
+        if [[ -f "${LIBPULSAR_PATH}/libpulsar.a" ]]
+        then
+            echo "lib already downloaded"
+            exit 0
+        fi
+        apt-get update && apt-get install -y --no-install-recommends \
+            curl \
+            ca-certificates \
+            libssl-dev
+        curl --show-error --silent --location "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-${PULSAR_VERSION}/DEB/apache-pulsar-client.deb" --output apache-pulsar-client.deb
+        curl --show-error --silent --location "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-${PULSAR_VERSION}/DEB/apache-pulsar-client-dev.deb" --output apache-pulsar-client-dev.deb
+        apt-get install ./apache-pulsar-client*.deb
+    elif command -v brew &> /dev/null
+    then
+        echo "brew found"
+        LIBPULSAR_PATH=/usr/local/Cellar/libpulsar/${PULSAR_VERSION}/lib
+        if [[ -f "${LIBPULSAR_PATH}/libpulsar.a" ]]
+        then
+            echo "lib already downloaded"
+            exit 0
+        fi
+        brew install libpulsar
+    elif command -v rpm &> /dev/null
+    then
+        echo "rpm found"
+        LIBPULSAR_PATH=/usr/lib
+        if [[ -f "${LIBPULSAR_PATH}/libpulsar.a" ]]
+        then
+            echo "lib already downloaded"
+            exit 0
+        fi
+        curl --show-error --silent --location "https://archive.apache.org/dist/pulsar/pulsar-${PULSAR_VERSION}/RPMS/apache-pulsar-client-${PULSAR_VERSION}-1.x86_64.rpm" --output apache-pulsar-client-${PULSAR_VERSION}-1.x86_64.rpm
+        curl --show-error --silent --location "https://archive.apache.org/dist/pulsar/pulsar-${PULSAR_VERSION}/RPMS/apache-pulsar-client-devel-${PULSAR_VERSION}-1.x86_64.rpm" --output apache-pulsar-client-devel-${PULSAR_VERSION}-1.x86_64.rpm
+        rpm -ivh apache-pulsar-client*.rpm
+    else
+        echo "no package manager found"
         exit 1
     fi
 }
-
-function DownloadLib()
-{
-  echo "repo=$REPO rev=$REV branch=$BRANCH"
-
-  mkdir -p $MIX_DEPS_PATH
-  pushd $MIX_DEPS_PATH
-
-  if [ ! -d "$DESTINATION" ]; then
-      fail_check git clone -b $BRANCH $REPO $DESTINATION
-  fi
-
-  pushd $DESTINATION
-  fail_check git checkout $REV
-  popd
-  popd
-}
-
-function BuildLib()
-{
-  pushd $MIX_DEPS_PATH
-  pushd $DESTINATION
-
-  OS=$(uname -s)
-
-  case $OS in
-        Darwin)
-            brew install openssl protobuf boost boost-python boost-python3 log4cxx jsoncpp
-            export OPENSSL_ROOT_DIR=$(brew --prefix openssl)
-            export OPENSSL_INCLUDE_DIR=$OPENSSL_ROOT_DIR/include
-            export OPENSSL_SSL_LIBRARY=$OPENSSL_ROOT_DIR/lib
-            export CPPFLAGS=-I$OPENSSL_ROOT_DIR/include
-            export LDFLAGS=-L$OPENSSL_ROOT_DIR/lib
-            cd pulsar-client-cpp
-            fail_check cmake . -DBUILD_TESTS=OFF -DBUILD_PYTHON_WRAPPER=OFF -DBoost_INCLUDE_DIRS=$(brew --prefix boost)/include -DProtobuf_INCLUDE_DIR=$(brew --prefix protobuf)/include -DProtobuf_LIBRARIES=$(brew --prefix protobuf)/lib/libprotobuf.dylib
-            fail_check make pulsarShared -j$(nproc)
-            ;;
-        *)
-            cd pulsar-client-cpp
-            fail_check cmake . -DBUILD_TESTS=OFF -DLINK_STATIC=ON
-            fail_check make pulsarStatic -j$(nproc)
-  esac
-
-  popd
-  popd
-}
-
-DESTINATION=pulsar
-
-if [[ -f "$MIX_DEPS_PATH/$DESTINATION/pulsar-client-cpp/lib/libpulsar.a" || -f "$MIX_DEPS_PATH/$DESTINATION/pulsar-client-cpp/lib/libpulsar.dylib" ]]; then
-    echo "pulsar fork already exist. delete $MIX_DEPS_PATH/$DESTINATION for a fresh checkout."
-    exit 0
-fi
-
-REPO=https://github.com/apache/pulsar
-BRANCH=v2.7.0
-REV=b0c45952d063b754e387b3f9cbff279b9885b107
+${PULSAR_VERSION}
+PULSAR_VERSION=2.7.0
 
 DownloadLib
-BuildLib
