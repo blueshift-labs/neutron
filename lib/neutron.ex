@@ -50,12 +50,15 @@ defmodule Neutron do
       {_, pid, _type, [Neutron.PulsarConsumer]}, acc when is_pid(pid) ->
         state = :sys.get_state(pid)
         maybe_subscription = get_in(state, [:config, :subscription])
+
         if maybe_subscription == subscription do
-          [Neutron.Application.terminate_child(pid)|acc]
+          [Neutron.Application.terminate_child(pid) | acc]
         else
           acc
         end
-      _, acc -> acc
+
+      _, acc ->
+        acc
     end)
   end
 
@@ -65,12 +68,15 @@ defmodule Neutron do
       {_, pid, _type, [Neutron.PulsarConsumer]}, acc when is_pid(pid) ->
         state = :sys.get_state(pid)
         maybe_topic = get_in(state, [:config, :topic])
+
         if maybe_topic == topic do
-          [Neutron.Application.terminate_child(pid)|acc]
+          [Neutron.Application.terminate_child(pid) | acc]
         else
           acc
         end
-      _, acc -> acc
+
+      _, acc ->
+        acc
     end)
   end
 
@@ -80,11 +86,11 @@ defmodule Neutron do
   Will bootstrap a pulsar producer for each call so async produce where you re-use the producer is more efficient.
   Uses the global pulsar client for connection information.
   """
-  @spec sync_produce(String.t(), String.t(), map()) :: :ok | {:error, String.t()}
-  def sync_produce(topic, message, produce_opts \\ %{})
-      when is_binary(topic) and is_binary(message) and is_map(produce_opts) do
+  @spec sync_produce(String.t(), String.t(), keyword()) :: :ok | {:error, String.t()}
+  def sync_produce(topic, message, produce_opts \\ [])
+      when is_binary(topic) and is_binary(message) and is_list(produce_opts) do
     {:ok, client_ref} = PulsarClient.get_client()
-    PulsarNifs.sync_produce(client_ref, topic, message, produce_opts)
+    PulsarNifs.sync_produce(client_ref, topic, message, produce_opts |> Enum.into(%{}))
   end
 
   @doc """
@@ -135,10 +141,10 @@ defmodule Neutron do
   Uses the global pulsar client for connection information.
   Will return :ok on sucess or an {:error, String.t()} on failure
   """
-  @spec async_produce(Genserver.server(), String.t(), map()) :: GenServer.call()
-  def async_produce(producer_lookup, msg, produce_opts \\ %{})
+  @spec async_produce(Genserver.server(), String.t(), keyword()) :: GenServer.call()
+  def async_produce(producer_lookup, msg, produce_opts \\ [])
       when is_pid(producer_lookup) or is_atom(producer_lookup) or
-             (is_tuple(producer_lookup) and is_binary(msg) and is_map(produce_opts)) do
-    GenServer.call(producer_lookup, {:async_produce, msg, produce_opts})
+             (is_tuple(producer_lookup) and is_binary(msg) and is_list(produce_opts)) do
+    GenServer.call(producer_lookup, {:async_produce, msg, produce_opts |> Enum.into(%{})})
   end
 end

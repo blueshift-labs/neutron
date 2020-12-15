@@ -9,9 +9,7 @@ defmodule NeutronTest do
             partition_key <- binary()
           ) do
       assert :ok ==
-               Neutron.sync_produce("my-topic-produce", message, %{
-                 partition_key: partition_key
-               })
+               Neutron.sync_produce("my-topic-produce", message, partition_key: partition_key)
     end
   end
 
@@ -30,12 +28,9 @@ defmodule NeutronTest do
 
     {:ok, pid} = Neutron.create_async_producer("my-topic-async-produce", DeliverCallback)
 
-    :ok =
-      Neutron.async_produce(pid, message, %{
-        partition_key: UUID.uuid4()
-      })
+    :ok = Neutron.async_produce(pid, message, partition_key: UUID.uuid4())
 
-    assert_receive {:test_deliver, {:ok, new_msg_id, ^message}}
+    assert_receive {:test_deliver, {:ok, _new_msg_id, ^message}}
   end
 
   test "sync produce and consume roundtrip" do
@@ -70,11 +65,11 @@ defmodule NeutronTest do
     {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerCallback, topic: topic)
 
     :ok =
-      Neutron.sync_produce(topic, payload, %{
+      Neutron.sync_produce(topic, payload,
         partition_key: partition_key,
         event_ts: event_ts,
         properties: properties
-      })
+      )
 
     assert_receive {:test_callback, ^topic, ^partition_key, ^event_ts, ^properties, ^payload}
   end
@@ -108,7 +103,7 @@ defmodule NeutronTest do
       Neutron.start_consumer(callback_module: ConsumerDelayAfterCallback, topic: topic)
 
     :ok =
-      Neutron.sync_produce(topic, message, %{deliver_after_ms: ConsumerDelayAfterCallback.delay()})
+      Neutron.sync_produce(topic, message, deliver_after_ms: ConsumerDelayAfterCallback.delay())
 
     Process.sleep(2_005)
   end
@@ -141,7 +136,7 @@ defmodule NeutronTest do
     current_time_unix_ms = DateTime.to_unix(DateTime.utc_now(), :millisecond)
     message = "#{current_time_unix_ms}"
     unix_time_to_send_ms = current_time_unix_ms + ConsumerDelayAtCallback.delay()
-    :ok = Neutron.sync_produce(topic, message, %{deliver_at_ms: unix_time_to_send_ms})
+    :ok = Neutron.sync_produce(topic, message, deliver_at_ms: unix_time_to_send_ms)
     Process.sleep(2_005)
   end
 end

@@ -1,5 +1,5 @@
 defmodule Neutron.PulsarAsyncProducerCallback do
-  @moduledoc "callback for async producer's delivery status"
+  @moduledoc "Callback for async producer's delivery status"
   # the string is the serialized msg_id
   # int64 ledgerId
   # int64 entryId
