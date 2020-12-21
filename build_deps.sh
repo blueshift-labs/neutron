@@ -21,9 +21,11 @@ function DownloadLib()
     elif command -v brew &> /dev/null
     then
         echo "brew found"
-        LIBPULSAR_PATH=/usr/local/Cellar/libpulsar/${PULSAR_VERSION}/lib
+        LIBPULSAR_PATH=/usr/local/opt/libpulsar/lib
         if [[ -f "${LIBPULSAR_PATH}/libpulsar.a" ]]
         then
+            # TODO: may need to check for latest version
+            brew list --versions libpulsar
             echo "lib already downloaded"
             exit 0
         fi
@@ -45,7 +47,6 @@ function DownloadLib()
         exit 1
     fi
 }
-${PULSAR_VERSION}
 PULSAR_VERSION=2.7.0
 
 DownloadLib
