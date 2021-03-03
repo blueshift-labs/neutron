@@ -11,13 +11,13 @@ function DownloadLib()
             echo "lib already downloaded"
             exit 0
         fi
-        apt-get update && apt-get install -y --no-install-recommends \
+        sudo apt-get update && sudo apt-get install -y --no-install-recommends \
             curl \
             ca-certificates \
             libssl-dev
         curl --show-error --silent --location "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-${PULSAR_VERSION}/DEB/apache-pulsar-client.deb" --output apache-pulsar-client.deb
         curl --show-error --silent --location "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-${PULSAR_VERSION}/DEB/apache-pulsar-client-dev.deb" --output apache-pulsar-client-dev.deb
-        apt-get install ./apache-pulsar-client*.deb
+        sudo apt-get install ./apache-pulsar-client*.deb
     elif command -v brew &> /dev/null
     then
         echo "brew found"
