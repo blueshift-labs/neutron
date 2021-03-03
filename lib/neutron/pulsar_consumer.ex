@@ -29,6 +29,7 @@ defmodule Neutron.PulsarConsumer do
     subscription = Keyword.get(arg, :subscription, "my-subscription")
     topic = Keyword.get(arg, :topic, "my-topic")
     consumer_type = Keyword.get(arg, :consumer_type, :shared)
+    name = Keyword.get(arg, :name, "PulsarConsumer-#{:erlang.unique_integer([:monotonic])}")
 
     if !is_binary(topic) || !is_binary(subscription) do
       raise "invalid arg given. Please pass-in a String.t()"
@@ -43,7 +44,7 @@ defmodule Neutron.PulsarConsumer do
         subscription: subscription,
         callback_module: callback_module,
         consumer_type: consumer_type
-      })
+      }), name: String.to_atom(name)
     )
   end
 

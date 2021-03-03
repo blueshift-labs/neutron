@@ -21,10 +21,9 @@ $(warning MIX_APP_PATH not set. Invoke via mix)
 endif
 
 CPP_PATH=$(MIX_DEPS_PATH)/pulsar/pulsar-client-cpp
-PULSAR_VERSION=2.7.0
 
-ifeq ($(shell uname),Darwin)     # Mac OS X
-	PLATFORM_OPTIONS=-undefined dynamic_lookup -L/usr/local/Cellar/libpulsar/$(PULSAR_VERSION)/lib -lpulsar -rpath /usr/local/Cellar/libpulsar/$(PULSAR_VERSION)/lib
+ifeq ($(shell uname),Darwin) # Mac OS X
+	PLATFORM_OPTIONS=-undefined dynamic_lookup -L/usr/local/opt/libpulsar/lib -lpulsar -rpath /usr/local/opt/libpulsar/lib
 else
 	PLATFORM_OPTIONS=/usr/lib/libpulsar.so
 endif
