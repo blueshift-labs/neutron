@@ -1,0 +1,24 @@
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+name: Publish Release
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Publish to hex
+        uses: erlef/setup-elixir@v1
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+        with:
+          otp-version: '23.2'
+          elixir-version: '1.11.3'
+      - run: mix deps.get
+      - run: mix docs
+      - run: mix hex.publish --yes --organization blueshift
