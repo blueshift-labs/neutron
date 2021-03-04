@@ -19,6 +19,6 @@ jobs:
           elixir-version: '1.11.3'
       - run: mix deps.get
       - run: mix docs
-      - run: mix hex.publish --yes --organization blueshift
+      - run: mix hex.publish --yes
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
