@@ -44,7 +44,8 @@ defmodule Neutron.PulsarConsumer do
         subscription: subscription,
         callback_module: callback_module,
         consumer_type: consumer_type
-      }), name: String.to_atom(name)
+      }),
+      name: String.to_atom(name)
     )
   end
 
@@ -57,10 +58,23 @@ defmodule Neutron.PulsarConsumer do
 
   @impl true
   def handle_info(
-        {:neutron_msg, _topic, msg_id_ref, _partition_key, _publish_ts, _event_ts,
-         _redelivery_count, _properties, _payload} = msg,
-        %{callback_module: callback_module, consumer_ref: consumer_ref} = state
+        {:neutron_msg, topic, msg_id_ref, partition_key, publish_ts, event_ts, redelivery_count,
+         properties, payload},
+        %{properties_to_map: true} = state
       ) do
+    {:neutron_msg, topic, msg_id_ref, partition_key, publish_ts, event_ts, redelivery_count,
+     Enum.into(properties, %{}), payload}
+    |> handle_msg(state)
+  end
+
+  @impl true
+  def handle_info(msg, state), do: handle_msg(msg, state)
+
+  defp handle_msg(
+         {:neutron_msg, _topic, msg_id_ref, _partition_key, _publish_ts, _event_ts,
+          _redelivery_count, _properties, _payload} = msg,
+         %{callback_module: callback_module, consumer_ref: consumer_ref} = state
+       ) do
     res =
       try do
         callback_module.handle_message(msg, state)

@@ -1,5 +1,5 @@
 defmodule Neutron.PulsarConsumerCallback do
-  @type properties :: [{String.t(), String.t()}]
+  @type properties :: [{String.t(), String.t()}] | %{String.t() => String.t()}
   @type state :: any()
 
   @moduledoc """

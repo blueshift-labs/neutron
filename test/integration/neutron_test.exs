@@ -28,7 +28,8 @@ defmodule NeutronTest do
 
     {:ok, pid} = Neutron.create_async_producer("my-topic-async-produce", DeliverCallback)
 
-    :ok = Neutron.async_produce(pid, message, partition_key: UUID.uuid4())
+    :ok =
+      Neutron.async_produce(pid, message, partition_key: UUID.uuid4(), properties: %{test: true})
 
     assert_receive {:test_deliver, {:ok, _new_msg_id, ^message}}
   end
@@ -63,6 +64,53 @@ defmodule NeutronTest do
 
     topic = "persistent://public/default/my-topic-consume"
     {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerCallback, topic: topic)
+
+    :ok =
+      Neutron.sync_produce(topic, payload,
+        partition_key: partition_key,
+        event_ts: event_ts,
+        properties: properties
+      )
+
+    assert_receive {:test_callback, ^topic, ^partition_key, ^event_ts, ^properties, ^payload}
+  end
+
+  test "sync produce and consume roundtrip with property map" do
+    defmodule ConsumerCallback do
+      @behaviour Neutron.PulsarConsumerCallback
+      @compiled_pid self()
+
+      @impl true
+      def handle_message(
+            {:neutron_msg, topic, _msg_id, partition_key, _publish_ts, event_ts,
+             _redelivery_count, properties, payload},
+            _state
+          ) do
+        send(
+          @compiled_pid,
+          {:test_callback, topic, partition_key, event_ts, properties, payload}
+        )
+
+        Process.sleep(10)
+        :ack
+      end
+    end
+
+    partition_key = UUID.uuid4()
+    event_ts = :rand.uniform(10000)
+    id = UUID.uuid4()
+    action = "index"
+    properties = %{"id" => id, "action" => action}
+    payload = UUID.uuid4()
+
+    topic = "persistent://public/default/my-topic-consume"
+
+    {:ok, _pid} =
+      Neutron.start_consumer(
+        callback_module: ConsumerCallback,
+        topic: topic,
+        properties_to_map: true
+      )
 
     :ok =
       Neutron.sync_produce(topic, payload,
