@@ -58,23 +58,10 @@ defmodule Neutron.PulsarConsumer do
 
   @impl true
   def handle_info(
-        {:neutron_msg, topic, msg_id_ref, partition_key, publish_ts, event_ts, redelivery_count,
-         properties, payload},
-        %{properties_to_map: true} = state
+        {:neutron_msg, _topic, msg_id_ref, _partition_key, _publish_ts, _event_ts,
+         _redelivery_count, _properties, _payload} = msg,
+        %{callback_module: callback_module, consumer_ref: consumer_ref} = state
       ) do
-    {:neutron_msg, topic, msg_id_ref, partition_key, publish_ts, event_ts, redelivery_count,
-     Enum.into(properties, %{}), payload}
-    |> handle_msg(state)
-  end
-
-  @impl true
-  def handle_info(msg, state), do: handle_msg(msg, state)
-
-  defp handle_msg(
-         {:neutron_msg, _topic, msg_id_ref, _partition_key, _publish_ts, _event_ts,
-          _redelivery_count, _properties, _payload} = msg,
-         %{callback_module: callback_module, consumer_ref: consumer_ref} = state
-       ) do
     res =
       try do
         callback_module.handle_message(msg, state)
@@ -124,9 +111,24 @@ defmodule Neutron.PulsarConsumer do
           raise "Invalid :consumer_type specified. Valid types are :exclusive :shared :failover or :key_shared"
       end
 
+    subscription_initial_position =
+      case Map.get(config, :subscription_initial_position) do
+        :latest -> 0
+        :earliest -> 1
+        _ -> 0
+      end
+
+    read_compacted =
+      case Map.get(config, :read_compacted) do
+        true -> 1
+        _ -> 0
+      end
+
     full_config =
       config
       |> Map.put(:type_int, consumer_enum_int)
+      |> Map.put(:subscription_initial_position, subscription_initial_position)
+      |> Map.put(:read_compacted, read_compacted)
       |> Map.put(:send_back_to_pid, self())
 
     PulsarNifs.do_consume(client_ref, full_config)

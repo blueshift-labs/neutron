@@ -90,17 +90,7 @@ defmodule Neutron do
   def sync_produce(topic, message, produce_opts \\ [])
       when is_binary(topic) and is_binary(message) and is_list(produce_opts) do
     {:ok, client_ref} = PulsarClient.get_client()
-
-    produce_opts =
-      case Keyword.get(produce_opts, :properties) do
-        props when is_map(props) ->
-          produce_opts |> Keyword.merge(properties: Enum.into(props, [])) |> Enum.into(%{})
-
-        _ ->
-          produce_opts |> Enum.into(%{})
-      end
-
-    PulsarNifs.sync_produce(client_ref, topic, message, produce_opts)
+    PulsarNifs.sync_produce(client_ref, topic, message, produce_opts |> Enum.into(%{}))
   end
 
   @doc """
@@ -155,15 +145,6 @@ defmodule Neutron do
   def async_produce(producer_lookup, msg, produce_opts \\ [])
       when is_pid(producer_lookup) or is_atom(producer_lookup) or
              (is_tuple(producer_lookup) and is_binary(msg) and is_list(produce_opts)) do
-    produce_opts =
-      case Keyword.get(produce_opts, :properties) do
-        props when is_map(props) ->
-          produce_opts |> Keyword.merge(properties: Enum.into(props, [])) |> Enum.into(%{})
-
-        _ ->
-          produce_opts |> Enum.into(%{})
-      end
-
-    GenServer.call(producer_lookup, {:async_produce, msg, produce_opts})
+    GenServer.call(producer_lookup, {:async_produce, msg, produce_opts |> Enum.into(%{})})
   end
 end

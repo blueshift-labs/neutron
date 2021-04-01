@@ -59,47 +59,6 @@ defmodule NeutronTest do
     event_ts = :rand.uniform(10000)
     id = UUID.uuid4()
     action = "index"
-    properties = [{"id", id}, {"action", action}] |> Enum.reverse()
-    payload = UUID.uuid4()
-
-    topic = "persistent://public/default/my-topic-consume"
-    {:ok, _pid} = Neutron.start_consumer(callback_module: ConsumerCallback, topic: topic)
-
-    :ok =
-      Neutron.sync_produce(topic, payload,
-        partition_key: partition_key,
-        event_ts: event_ts,
-        properties: properties
-      )
-
-    assert_receive {:test_callback, ^topic, ^partition_key, ^event_ts, ^properties, ^payload}
-  end
-
-  test "sync produce and consume roundtrip with property map" do
-    defmodule ConsumerCallback do
-      @behaviour Neutron.PulsarConsumerCallback
-      @compiled_pid self()
-
-      @impl true
-      def handle_message(
-            {:neutron_msg, topic, _msg_id, partition_key, _publish_ts, event_ts,
-             _redelivery_count, properties, payload},
-            _state
-          ) do
-        send(
-          @compiled_pid,
-          {:test_callback, topic, partition_key, event_ts, properties, payload}
-        )
-
-        Process.sleep(10)
-        :ack
-      end
-    end
-
-    partition_key = UUID.uuid4()
-    event_ts = :rand.uniform(10000)
-    id = UUID.uuid4()
-    action = "index"
     properties = %{"id" => id, "action" => action}
     payload = UUID.uuid4()
 
@@ -109,7 +68,16 @@ defmodule NeutronTest do
       Neutron.start_consumer(
         callback_module: ConsumerCallback,
         topic: topic,
-        properties_to_map: true
+        receiver_queue_size: 1000,
+        max_total_receiver_queue_size_across_partitions: 1001,
+        consumer_name: "consumer_name",
+        unacked_messages_timeout_ms: 10_002,
+        negative_ack_redelivery_delay_ms: 1003,
+        ack_grouping_time_ms: 1004,
+        ack_grouping_max_size: 1005,
+        read_compacted: false,
+        subscription_initial_position: :latest,
+        properties: %{"test" => "true"}
       )
 
     :ok =
