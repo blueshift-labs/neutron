@@ -12,7 +12,7 @@ https://pulsar.apache.org/api/cpp/
 ```elixir
 def deps do
   [
-    {:neutron, "~> 0.1"}
+    {:neutron, "~> 0.2"}
   ]
 end
 ```

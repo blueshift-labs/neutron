@@ -7,7 +7,7 @@ defmodule Neutron.MixProject do
       compilers: [:elixir_make] ++ Mix.compilers(),
       build_embedded: Mix.env() == :prod,
       make_clean: ["clean"],
-      version: "0.1.2",
+      version: "0.2.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
