@@ -48,11 +48,11 @@ defmodule Neutron.PulsarAsyncProducer do
 
   @impl true
   def handle_info(
-        {:delivery_callback, result, msg_id, msg},
+        {:delivery_callback, result, msg_id, msg, opts},
         %{config: %{callback_module: callback_module}} = state
       ) do
     try do
-      callback_module.handle_delivery({result, msg_id, msg})
+      callback_module.handle_delivery({result, msg_id, msg, opts})
     catch
       _any -> {:error, :exception}
     end
@@ -74,7 +74,6 @@ defmodule Neutron.PulsarAsyncProducer do
   @impl true
   def terminate(_reason, %{producer_ref: producer_ref} = state) do
     :ok = PulsarNifs.destroy_producer(producer_ref)
-
     state
   end
 end

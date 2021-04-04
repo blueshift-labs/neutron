@@ -5,6 +5,6 @@ defmodule Neutron.PulsarAsyncProducerCallback do
   # int64 entryId
   # int32 partition
   # int32 batchIndex
-  @callback handle_delivery({:ok, String.t(), String.t()} | {:error, String.t(), String.t()}) ::
+  @callback handle_delivery({:ok, any(), any(), any()} | {:error, any(), any(), any()}) ::
               any()
 end

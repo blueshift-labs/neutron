@@ -16,9 +16,9 @@ defmodule Neutron.PulsarNifs do
     :erlang.load_nif(directory, 0)
   end
 
-  def sync_produce(_client_ref, _topic, _message, _produce_opts) do
-    raise "NIF sync_produce/4 not implemented"
-  end
+  # def sync_produce(_client_ref, _topic, _message, _produce_opts) do
+  #   raise "NIF sync_produce/4 not implemented"
+  # end
 
   def make_client(_config_map) do
     raise "NIF make_client/1 not implemented"

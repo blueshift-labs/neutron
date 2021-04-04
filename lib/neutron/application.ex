@@ -31,7 +31,6 @@ defmodule Neutron.Application do
   end
 
   def stop(_state) do
-    DynamicSupervisor.stop(@dynamic_supervisor)
     PulsarClient.stop_client()
   end
 

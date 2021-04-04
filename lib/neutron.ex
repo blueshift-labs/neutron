@@ -80,18 +80,18 @@ defmodule Neutron do
     end)
   end
 
-  @doc """
-  Does a synchronous produce to given topic binary with given message binary and optional produce_opts.
-  produce_opts: the keys are :deliver_after_ms and :deliver_at_ms both take an int as the value for :deliver_at_ms the int is a unix timestamp in milliseconds for :deliver_after_ms it's the delay to send the message after in milliseconds.
-  Will bootstrap a pulsar producer for each call so async produce where you re-use the producer is more efficient.
-  Uses the global pulsar client for connection information.
-  """
-  @spec sync_produce(String.t(), String.t(), keyword()) :: :ok | {:error, String.t()}
-  def sync_produce(topic, message, produce_opts \\ [])
-      when is_binary(topic) and is_binary(message) and is_list(produce_opts) do
-    {:ok, client_ref} = PulsarClient.get_client()
-    PulsarNifs.sync_produce(client_ref, topic, message, produce_opts |> Enum.into(%{}))
-  end
+  # @doc """
+  # Does a synchronous produce to given topic binary with given message binary and optional produce_opts.
+  # produce_opts: the keys are :deliver_after_ms and :deliver_at_ms both take an int as the value for :deliver_at_ms the int is a unix timestamp in milliseconds for :deliver_after_ms it's the delay to send the message after in milliseconds.
+  # Will bootstrap a pulsar producer for each call so async produce where you re-use the producer is more efficient.
+  # Uses the global pulsar client for connection information.
+  # """
+  # @spec sync_produce(String.t(), String.t(), keyword()) :: :ok | {:error, String.t()}
+  # def sync_produce(topic, message, produce_opts \\ [])
+  #     when is_binary(topic) and is_binary(message) and is_list(produce_opts) do
+  #   {:ok, client_ref} = PulsarClient.get_client()
+  #   PulsarNifs.sync_produce(client_ref, topic, message, produce_opts |> Enum.into(%{}))
+  # end
 
   @doc """
   Creates an asynchronous producer genServer with associated topic and callback.
