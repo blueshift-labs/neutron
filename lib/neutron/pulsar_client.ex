@@ -6,15 +6,14 @@ defmodule Neutron.PulsarClient do
   @client_key :pulsar_client
 
   def start_client do
-    pulsar_url = Application.get_env(:neutron, :url, "pulsar://localhost:6650")
+    url = Application.fetch_env!(:neutron, :url)
     thread_count_to_use = Application.get_env(:neutron, :thread_count, System.schedulers_online())
 
     client_ref =
-      PulsarNifs.make_client(%{
-        io_threads: thread_count_to_use,
-        msg_listener_threads: thread_count_to_use,
-        url: pulsar_url
-      })
+      PulsarNifs.create_client(
+        url,
+        Application.get_env(:neutron, :client_opts, []) |> Enum.into(%{})
+      )
 
     :persistent_term.put(@client_key, client_ref)
   end

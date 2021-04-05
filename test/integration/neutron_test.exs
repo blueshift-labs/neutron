@@ -27,7 +27,7 @@ defmodule NeutronTest do
 
     message = "hello test deliver"
 
-    {:ok, pid} = Neutron.create_managed_async_producer("my-topic-async-produce", DeliverCallback)
+    {:ok, pid} = Neutron.create_async_producer("my-topic-async-produce", DeliverCallback)
 
     :ok =
       Neutron.async_produce(pid, message, partition_key: UUID.uuid4(), properties: %{test: true})
