@@ -16,11 +16,11 @@ defmodule NeutronTest do
   test "async produce is always successful" do
     defmodule DeliverCallback do
       @behaviour Neutron.PulsarAsyncProducerCallback
-      @compiled_pid self()
+      @compiled_pid :erlang.pid_to_list(self())
 
       @impl true
       def handle_delivery(res) do
-        _msg = send(@compiled_pid, {:test_deliver, res})
+        send(:erlang.list_to_pid(@compiled_pid), res)
       end
     end
 
@@ -37,7 +37,7 @@ defmodule NeutronTest do
   test "sync produce and consume roundtrip" do
     defmodule ConsumerCallback do
       @behaviour Neutron.PulsarConsumerCallback
-      @compiled_pid self()
+      @compiled_pid :erlang.pid_to_list(self())
 
       @impl true
       def handle_message(
@@ -46,7 +46,7 @@ defmodule NeutronTest do
             _state
           ) do
         send(
-          @compiled_pid,
+          :erlang.list_to_pid(@compiled_pid),
           {:test_callback, topic, partition_key, event_ts, properties, payload}
         )
 
