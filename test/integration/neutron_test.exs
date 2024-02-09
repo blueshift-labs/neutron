@@ -16,11 +16,11 @@ defmodule NeutronTest do
   test "async produce is always successful" do
     defmodule DeliverCallback do
       @behaviour Neutron.PulsarAsyncProducerCallback
-      @compiled_pid self()
+      @compiled_pid :erlang.pid_to_list(self())
 
       @impl true
       def handle_delivery(res) do
-        _msg = send(@compiled_pid, {:test_deliver, res})
+        send(:erlang.list_to_pid(@compiled_pid), res)
       end
     end
 
@@ -31,13 +31,58 @@ defmodule NeutronTest do
     :ok =
       Neutron.async_produce(pid, message, partition_key: UUID.uuid4(), properties: %{test: true})
 
+    assert_receive {:ok, _new_msg_id, ^message}
+  end
+
+  test "async iodata produce is always successful when data is iodata" do
+    defmodule DeliverIoDataCallback do
+      @behaviour Neutron.PulsarAsyncProducerCallback
+      @compiled_pid :erlang.pid_to_list(self())
+
+      @impl true
+      def handle_delivery(res) do
+        _msg = send(:erlang.list_to_pid(@compiled_pid), {:test_deliver, res})
+      end
+    end
+
+    # hello test driver
+    io_message = [<<104,101,108,108,111,32,116,101,115,116,32,100,114,105,118,101,114>>]
+    message = IO.iodata_to_binary(io_message)
+
+    {:ok, pid} = Neutron.create_async_producer("io-topic-async-produce", DeliverIoDataCallback)
+
+    :ok =
+      Neutron.async_iodata_produce!(pid, io_message, partition_key: UUID.uuid4(), properties: %{test: true})
+
     assert_receive {:test_deliver, {:ok, _new_msg_id, ^message}}
+  end
+
+  test "async iodata produce is always successful when data is binary" do
+    defmodule DeliverIoDataBinCallback do
+      @behaviour Neutron.PulsarAsyncProducerCallback
+      @compiled_pid :erlang.pid_to_list(self())
+
+      @impl true
+      def handle_delivery(res) do
+        send(:erlang.list_to_pid(@compiled_pid), res)
+      end
+    end
+
+    # hello test driver
+    message = "hello test driver"
+
+    {:ok, pid} = Neutron.create_async_producer("iobin-topic-async-produce", DeliverIoDataBinCallback)
+
+    :ok =
+      Neutron.async_iodata_produce!(pid, message, partition_key: UUID.uuid4(), properties: %{test: true})
+
+    assert_receive {:ok, _new_msg_id, ^message}
   end
 
   test "sync produce and consume roundtrip" do
     defmodule ConsumerCallback do
       @behaviour Neutron.PulsarConsumerCallback
-      @compiled_pid self()
+      @compiled_pid :erlang.pid_to_list(self())
 
       @impl true
       def handle_message(
@@ -46,7 +91,7 @@ defmodule NeutronTest do
             _state
           ) do
         send(
-          @compiled_pid,
+          :erlang.list_to_pid(@compiled_pid),
           {:test_callback, topic, partition_key, event_ts, properties, payload}
         )
 
