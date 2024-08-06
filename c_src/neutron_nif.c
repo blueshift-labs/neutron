@@ -667,7 +667,7 @@ sync_produce(ErlNifEnv * env, int argc,
 
   ErlNifBinary topic_bin;
 
-  int topic_ret = enif_inspect_binary(env, argv[1], & topic_bin);
+  int topic_ret = enif_inspect_iolist_as_binary(env, argv[1], & topic_bin);
   if (!topic_ret) {
     return make_error_tuple(env,
       "failed to create topic binary from input");
@@ -828,7 +828,7 @@ async_produce(ErlNifEnv * env, int argc,
 
   ErlNifBinary msg_bin;
 
-  int msg_ret = enif_inspect_binary(env, argv[1], & msg_bin);
+  int msg_ret = enif_inspect_iolist_as_binary(env, argv[1], & msg_bin);
   if (!msg_ret) {
     return make_error_tuple(env,
       "failed to create message binary from input");

@@ -147,4 +147,18 @@ defmodule Neutron do
              (is_tuple(producer_lookup) and is_binary(msg) and is_list(produce_opts)) do
     GenServer.call(producer_lookup, {:async_produce, msg, produce_opts |> Enum.into(%{})})
   end
+
+  @doc """
+  Does a asynchronous produce using the given producer pid generated from create_async_producer, given message and optional produce_opts.
+  message: It can be binary or iodata.
+  produce_opts: the keys are :deliver_after_ms and :deliver_at_ms both take an int as the value for :deliver_at_ms the int is a unix timestamp in milliseconds for :deliver_after_ms it's the delay to send the message after in milliseconds
+  Uses the global pulsar client for connection information.
+  Will return :ok on sucess or an {:error, String.t()} on failure
+  """
+  def async_iodata_produce!(producer_lookup, msg, produce_opts \\ [])
+    when is_pid(producer_lookup) or is_atom(producer_lookup) or
+    (is_tuple(producer_lookup) and is_list(produce_opts)) do
+      IO.iodata_length(msg) # It will raise an error if message is not a binary or iodata
+      GenServer.call(producer_lookup, {:async_produce, msg, produce_opts |> Enum.into(%{})})
+  end
 end
